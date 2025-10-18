@@ -52,5 +52,4 @@ class BMeshFromEditMode():
 
 
 def get_addon_preferences():
-    package_name = __name__.partition('.')[0]
-    return bpy.context.preferences.addons[package_name].preferences
+    return bpy.context.preferences.addons[__package__].preferences

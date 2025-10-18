@@ -175,7 +175,7 @@ class PIESPLUS_OT_add_hotkey(Operator):
 
 
 class PIESPLUS_MT_addon_prefs(AddonPreferences):
-    bl_idname = __name__.partition('.')[0]
+    bl_idname = __package__
 
     tabs: EnumProperty(
         items=(

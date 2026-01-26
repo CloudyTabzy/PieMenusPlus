@@ -166,30 +166,23 @@ class PIESPLUS_MT_UV_modes(Menu):
     bl_label = "Select Mode (UV)"
 
     def draw(self, context):
-        layout = self.layout
-        pie = layout.menu_pie()
+        pie = self.layout.menu_pie()
 
-        if context.tool_settings.use_uv_select_sync:
-            # 4 - LEFT
-            pie.operator("pies_plus.vertex", icon='VERTEXSEL')
-            # 6 - RIGHT
-            pie.operator("pies_plus.face", icon='FACESEL')
-            # 2 - BOTTOM
-            pie.operator("pies_plus.edge", icon='EDGESEL')
-            # 8 - TOP
-            pie.prop(context.scene.pies_plus, "uvSyncSelection", icon='UV_SYNC_SELECT')
+        # 4 - LEFT
+        pie.operator("pies_plus.vertex", icon='VERTEXSEL')
+        # 6 - RIGHT
+        pie.operator("pies_plus.face", icon='FACESEL')
+        # 2 - BOTTOM
+        pie.operator("pies_plus.edge", icon='EDGESEL')
+        # 8 - TOP
+        pie.prop(context.scene.pies_plus, "uvSyncSelection", icon='UV_SYNC_SELECT')
+        # 7 - TOP - LEFT
+        pie.separator()
+        # 9 - TOP - RIGHT
+        if bpy.app.version >= (5, 0, 0):
+            pie.prop(context.tool_settings, "use_uv_select_island",
+                     text='Island', icon='UV_ISLANDSEL')
         else:
-            #4 - LEFT
-            pie.operator("pies_plus.uv_sel_change", text='Vertex', icon='VERTEXSEL').sel_choice = 'vertex'
-            # 6 - RIGHT
-            pie.operator("pies_plus.uv_sel_change", text='Face', icon='FACESEL').sel_choice = 'face'
-            # 2 - BOTTOM
-            pie.operator("pies_plus.uv_sel_change", text='Edge', icon='EDGESEL').sel_choice = 'edge'
-            # 8 - TOP
-            pie.prop(context.scene.pies_plus, "uvSyncSelection", icon='UV_SYNC_SELECT')
-            # 7 - TOP - LEFT
-            pie.separator()
-            # 9 - TOP - RIGHT
             pie.operator("pies_plus.uv_sel_change", text='Island', icon='UV_ISLANDSEL').sel_choice = 'island'
 
 

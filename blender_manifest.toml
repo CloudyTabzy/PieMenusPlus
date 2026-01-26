@@ -12,7 +12,6 @@ website = "https://discord.com/invite/wHAyVZG"
 tags = ["3D View",]
 
 blender_version_min = "4.2.0"
-blender_version_max = "5.5.0"
 
 license = [
   "SPDX:GPL-3.0-or-later",

@@ -20,7 +20,7 @@ class PIESPLUS_OT_particle_edit(OpInfo, Operator):
     bl_label = "Particle Edit"
     bl_description = "Changes the Context Mode to Particle Edit Mode"
 
-    def execute(self, context):
+    def execute(self, _context):
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.particle.particle_edit_toggle()
         return {'FINISHED'}
@@ -36,7 +36,14 @@ class PIESPLUS_OT_vertex(OpInfo, Operator):
 
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.mesh.select_mode(use_extend=event.shift, type='VERT')
+        if bpy.app.version >= (5, 0, 0) \
+        and not context.tool_settings.use_uv_select_sync:
+            bpy.ops.uv.select_mode(type='VERTEX')
+            return {'FINISHED'}
+        if context.tool_settings.use_uv_select_sync:
+            bpy.ops.mesh.select_mode(use_extend=event.shift, type='VERT')
+            return {'FINISHED'}
+        bpy.ops.pies_plus.uv_sel_change(sel_choice='vertex')
         return {'FINISHED'}
 
 
@@ -50,7 +57,14 @@ class PIESPLUS_OT_edge(OpInfo, Operator):
 
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.mesh.select_mode(use_extend=event.shift, type='EDGE')
+        if bpy.app.version >= (5, 0, 0) \
+        and not context.tool_settings.use_uv_select_sync:
+            bpy.ops.uv.select_mode(type='EDGE')
+            return {'FINISHED'}
+        if context.tool_settings.use_uv_select_sync:
+            bpy.ops.mesh.select_mode(use_extend=event.shift, type='EDGE')
+            return {'FINISHED'}
+        bpy.ops.pies_plus.uv_sel_change(sel_choice='edge')
         return {'FINISHED'}
 
 
@@ -64,7 +78,14 @@ class PIESPLUS_OT_face(OpInfo, Operator):
 
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.mesh.select_mode(use_extend=event.shift, type='FACE')
+        if bpy.app.version >= (5, 0, 0) \
+        and not context.tool_settings.use_uv_select_sync:
+            bpy.ops.uv.select_mode(type='FACE')
+            return {'FINISHED'}
+        if context.tool_settings.use_uv_select_sync:
+            bpy.ops.mesh.select_mode(use_extend=event.shift, type='FACE')
+            return {'FINISHED'}
+        bpy.ops.pies_plus.uv_sel_change(sel_choice='face')
         return {'FINISHED'}
 
 

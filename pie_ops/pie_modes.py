@@ -37,10 +37,12 @@ class PIESPLUS_OT_vertex(OpInfo, Operator):
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
         if bpy.app.version >= (5, 0, 0) \
-        and not context.tool_settings.use_uv_select_sync:
+        and not context.tool_settings.use_uv_select_sync \
+        and bpy.ops.uv.select_mode.poll():
             bpy.ops.uv.select_mode(type='VERTEX')
             return {'FINISHED'}
-        if context.tool_settings.use_uv_select_sync:
+        if context.tool_settings.use_uv_select_sync \
+        or not bpy.ops.uv.select_mode.poll():
             bpy.ops.mesh.select_mode(use_extend=event.shift, type='VERT')
             return {'FINISHED'}
         bpy.ops.pies_plus.uv_sel_change(sel_choice='vertex')
@@ -58,10 +60,12 @@ class PIESPLUS_OT_edge(OpInfo, Operator):
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
         if bpy.app.version >= (5, 0, 0) \
-        and not context.tool_settings.use_uv_select_sync:
+        and not context.tool_settings.use_uv_select_sync \
+        and bpy.ops.uv.select_mode.poll():
             bpy.ops.uv.select_mode(type='EDGE')
             return {'FINISHED'}
-        if context.tool_settings.use_uv_select_sync:
+        if context.tool_settings.use_uv_select_sync \
+        or not bpy.ops.uv.select_mode.poll():
             bpy.ops.mesh.select_mode(use_extend=event.shift, type='EDGE')
             return {'FINISHED'}
         bpy.ops.pies_plus.uv_sel_change(sel_choice='edge')
@@ -79,10 +83,12 @@ class PIESPLUS_OT_face(OpInfo, Operator):
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
         if bpy.app.version >= (5, 0, 0) \
-        and not context.tool_settings.use_uv_select_sync:
+        and not context.tool_settings.use_uv_select_sync \
+        and bpy.ops.uv.select_mode.poll():
             bpy.ops.uv.select_mode(type='FACE')
             return {'FINISHED'}
-        if context.tool_settings.use_uv_select_sync:
+        if context.tool_settings.use_uv_select_sync \
+        or not bpy.ops.uv.select_mode.poll():
             bpy.ops.mesh.select_mode(use_extend=event.shift, type='FACE')
             return {'FINISHED'}
         bpy.ops.pies_plus.uv_sel_change(sel_choice='face')

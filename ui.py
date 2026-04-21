@@ -1699,6 +1699,7 @@ classes = (
     PIESPLUS_MT_active_tools,
     PIESPLUS_MT_looptools,
     PIESPLUS_MT_booltool,
+    PIESPLUS_MT_edgeflow,
     PIESPLUS_MT_origin_pivot,
     PIESPLUS_MT_transforms,
     PIESPLUS_MT_delete,

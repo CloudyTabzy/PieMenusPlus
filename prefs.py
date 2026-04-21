@@ -474,6 +474,10 @@ def register():
                                       'Object Mode', 'EMPTY', 'WINDOW',
                                       'C', 'PRESS', False, False, True)
 
+    PIESPLUS_addon_keymaps.new_keymap('EdgeFlow Pie', 'wm.call_menu_pie', 'PIESPLUS_MT_edgeflow',
+                                      'Mesh', 'EMPTY', 'WINDOW',
+                                      'F', 'PRESS', False, True, True)
+
     PIESPLUS_addon_keymaps.new_keymap('Delete Pie', 'wm.call_menu_pie', 'PIESPLUS_MT_delete',
                                       'Mesh', 'EMPTY', 'WINDOW',
                                       'X', 'PRESS', False, False, False)

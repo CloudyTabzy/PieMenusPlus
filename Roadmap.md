@@ -28,3 +28,4 @@ This document outlines future improvements and development goals for Pie Menus P
 - [x] Fix LoopTools and BoolTool detection to use operator existence checks
 - [x] Remove external links and author references for clean distribution
 - [x] Fix rna_keymap_ui implementation for Blender 5.0+
+- [x] Add EdgeFlow addon integration with context-aware pie menu (Shift+Alt+F)

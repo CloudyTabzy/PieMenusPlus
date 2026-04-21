@@ -19,6 +19,12 @@ Welcome to Pie Menus Plus! This is a free and open-source add-on providing impro
 
 **Note: Version 2.0.0 and later require Blender 5.0 or higher.** For older Blender versions, please use version 1.4.2 or earlier.
 
+# Recent Updates
+- **Blender 5.0+ API Compatibility**: Updated to use Blender 5.0+ APIs including brush asset management for sculpt tools
+- **Custom Sculpt Brushes**: Added preferences-based custom sculpt brush system allowing users to assign their own brush asset paths
+- **Improved Addon Detection**: Fixed BoolTool and LoopTools detection to use operator existence checks instead of addon registry lookups
+- **Clean Distribution**: Removed external links and author references for professional distribution
+
 # Available pie menus
 - Select Modes (UV compatible)
 - Origin / Cursor

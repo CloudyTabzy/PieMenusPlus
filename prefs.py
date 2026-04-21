@@ -4,6 +4,12 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup, Operator, AddonPreferences, Scene
 
+# Blender 5.0+ note: rna_keymap_ui still exists in source, try importing it
+try:
+    import rna_keymap_ui
+except ImportError:
+    rna_keymap_ui = None
+
 from .utils import get_addon_preferences
 
 
@@ -116,7 +122,10 @@ class PIESPLUS_addon_keymaps:
             if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
                 col.context_pointer_set('keymap', km)
                 col.context_pointer_set('keymap_item', km_item)
-                col.template_event_from_keymap_item(km_item, km)
+                if rna_keymap_ui is not None:
+                    rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
+                else:
+                    col.label(text=km_item.to_string())
                 return
 
         col.label(text=f"No hotkey entry found for {name}")
@@ -142,7 +151,7 @@ class PIESPLUS_addon_keymaps:
             row.label(text=f"{name} Pies")
 
             for id in keymap_entries[name]:
-                kc = wm.keyconfigs.user
+                kc = wm.keyconfigs.user  # Use user keyconfig for preferences display
 
                 kmi_name, kmi_value, km_name = id[:3]
                 split = box.split()

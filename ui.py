@@ -88,30 +88,21 @@ MESH_WEIGHT_PAINT_BRUSHES = {
 ########################################
 
 
-class PIESPLUS_OT_sculpt_brushes_popup(Operator):
-    bl_idname = "pies_plus.sculpt_brushes_popup"
+class PIESPLUS_MT_sculpt_brushes(Menu):
+    bl_idname = "PIESPLUS_MT_sculpt_brushes"
     bl_label = "Sculpt Brushes"
-    bl_description = "Popup menu for sculpt brush selection"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.invoke_props_dialog(self, width=300)
-        return {'RUNNING_MODAL'}
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
-        layout.label(text="Sculpt Brushes", icon='SCULPTMODE_HLT')
+        layout.scale_y = 1.2
+
+        layout.label(text="Sculpt Brushes (Blender 5.0+)", icon='SCULPTMODE_HLT')
         layout.separator()
 
         for brush_name, asset_name in MESH_SCULPT_BRUSHES.items():
             layout.operator(
                 "pies_plus.activate_sculpt_brush",
-                text=brush_name,
-                icon='BRUSH_SCULPT'
+                text=f"    {brush_name}"
             ).brush_name = asset_name
 
 
@@ -1397,7 +1388,7 @@ class PIESPLUS_MT_sculpt(Menu):
         # 6 - RIGHT
         pie.operator("paint.brush_select", text="    Blob").sculpt_brush_type = 'BLOB'
         # 2 - BOTTOM
-        pie.operator("pies_plus.sculpt_brushes_popup", text="    Brushes...", icon='BRUSH_SCULPT')
+        pie.menu("PIESPLUS_MT_sculpt_brushes", text="    Brushes...")
         # 8 - TOP
         pie.operator("paint.brush_select", text="    Draw").sculpt_brush_type = 'DRAW'
         # 7 - TOP - LEFT
@@ -1694,17 +1685,11 @@ classes = (
     PIESPLUS_MT_sculpt,
     PIESPLUS_MT_sculpt_grab,
     PIESPLUS_MT_sculpt_more,
+    PIESPLUS_MT_sculpt_brushes,
     PIESPLUS_MT_save,
     PIESPLUS_MT_align,
     PIESPLUS_MT_mark_edge,
-    PIESPLUS_OT_sculpt_brushes_popup,
     PIESPLUS_OT_activate_sculpt_brush,
-    PIESPLUS_OT_paint_brushes_popup,
-    PIESPLUS_OT_activate_paint_brush,
-    PIESPLUS_OT_vertex_paint_brushes_popup,
-    PIESPLUS_OT_activate_vertex_paint_brush,
-    PIESPLUS_OT_weight_paint_brushes_popup,
-    PIESPLUS_OT_activate_weight_paint_brush,
 )
 
 

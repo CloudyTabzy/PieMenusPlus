@@ -246,86 +246,44 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
     )
 
     # Custom Sculpt Brushes (Blender 5.0+)
-    def get_sculpt_brush_items(self, context):
-        items = [
-            ('Brushes/mesh_sculpt/Draw', 'Draw', 'Draw brush'),
-            ('Brushes/mesh_sculpt/Draw Sharp', 'Draw Sharp', 'Draw Sharp brush'),
-            ('Brushes/mesh_sculpt/Clay', 'Clay', 'Clay brush'),
-            ('Brushes/mesh_sculpt/Clay Strips', 'Clay Strips', 'Clay Strips brush'),
-            ('Brushes/mesh_sculpt/Clay Thumb', 'Clay Thumb', 'Clay Thumb brush'),
-            ('Brushes/mesh_sculpt/Layer', 'Layer', 'Layer brush'),
-            ('Brushes/mesh_sculpt/Inflate', 'Inflate', 'Inflate brush'),
-            ('Brushes/mesh_sculpt/Blob', 'Blob', 'Blob brush'),
-            ('Brushes/mesh_sculpt/Crease', 'Crease', 'Crease brush'),
-            ('Brushes/mesh_sculpt/Smooth', 'Smooth', 'Smooth brush'),
-            ('Brushes/mesh_sculpt/Flatten', 'Flatten', 'Flatten brush'),
-            ('Brushes/mesh_sculpt/Fill', 'Fill', 'Fill brush'),
-            ('Brushes/mesh_sculpt/Scrape', 'Scrape', 'Scrape brush'),
-            ('Brushes/mesh_sculpt/Multi-plane Scrape', 'Multi-plane Scrape', 'Multi-plane Scrape brush'),
-            ('Brushes/mesh_sculpt/Pinch', 'Pinch', 'Pinch brush'),
-            ('Brushes/mesh_sculpt/Grab', 'Grab', 'Grab brush'),
-            ('Brushes/mesh_sculpt/Elastic Deform', 'Elastic Deform', 'Elastic Deform brush'),
-            ('Brushes/mesh_sculpt/Snake Hook', 'Snake Hook', 'Snake Hook brush'),
-            ('Brushes/mesh_sculpt/Thumb', 'Thumb', 'Thumb brush'),
-            ('Brushes/mesh_sculpt/Pose', 'Pose', 'Pose brush'),
-            ('Brushes/mesh_sculpt/Nudge', 'Nudge', 'Nudge brush'),
-            ('Brushes/mesh_sculpt/Rotate', 'Rotate', 'Rotate brush'),
-            ('Brushes/mesh_sculpt/Slide Relax', 'Slide Relax', 'Slide Relax brush'),
-            ('Brushes/mesh_sculpt/Boundary', 'Boundary', 'Boundary brush'),
-            ('Brushes/mesh_sculpt/Cloth', 'Cloth', 'Cloth brush'),
-            ('Brushes/mesh_sculpt/Simplify', 'Simplify', 'Simplify brush'),
-            ('Brushes/mesh_sculpt/Displacement Eraser', 'Displacement Eraser', 'Displacement Eraser brush'),
-            ('Brushes/mesh_sculpt/Displacement Smear', 'Displacement Smear', 'Displacement Smear brush'),
-            ('Brushes/mesh_sculpt/Sharpen', 'Sharpen', 'Sharpen brush'),
-        ]
-        return items
-
-    custom_sculpt_brush_1: EnumProperty(
+    custom_sculpt_brush_1: StringProperty(
         name="Brush 1 (Left)",
-        description="Asset path for brush 1",
-        items=get_sculpt_brush_items,
+        description="Asset path for brush 1 (e.g., Brushes/mesh_sculpt/Draw)",
         default="Brushes/mesh_sculpt/Draw"
     )
-    custom_sculpt_brush_2: EnumProperty(
+    custom_sculpt_brush_2: StringProperty(
         name="Brush 2 (Right)",
-        description="Asset path for brush 2",
-        items=get_sculpt_brush_items,
+        description="Asset path for brush 2 (e.g., Brushes/mesh_sculpt/Blob)",
         default="Brushes/mesh_sculpt/Blob"
     )
-    custom_sculpt_brush_3: EnumProperty(
+    custom_sculpt_brush_3: StringProperty(
         name="Brush 3 (Bottom)",
-        description="Asset path for brush 3",
-        items=get_sculpt_brush_items,
+        description="Asset path for brush 3 (e.g., Brushes/mesh_sculpt/Clay)",
         default="Brushes/mesh_sculpt/Clay"
     )
-    custom_sculpt_brush_4: EnumProperty(
+    custom_sculpt_brush_4: StringProperty(
         name="Brush 4 (Top)",
-        description="Asset path for brush 4",
-        items=get_sculpt_brush_items,
+        description="Asset path for brush 4 (e.g., Brushes/mesh_sculpt/Clay Strips)",
         default="Brushes/mesh_sculpt/Clay Strips"
     )
-    custom_sculpt_brush_5: EnumProperty(
+    custom_sculpt_brush_5: StringProperty(
         name="Brush 5 (Top-Left)",
-        description="Asset path for brush 5",
-        items=get_sculpt_brush_items,
+        description="Asset path for brush 5 (e.g., Brushes/mesh_sculpt/Inflate)",
         default="Brushes/mesh_sculpt/Inflate"
     )
-    custom_sculpt_brush_6: EnumProperty(
+    custom_sculpt_brush_6: StringProperty(
         name="Brush 6 (Top-Right)",
-        description="Asset path for brush 6",
-        items=get_sculpt_brush_items,
+        description="Asset path for brush 6 (e.g., Brushes/mesh_sculpt/Smooth)",
         default="Brushes/mesh_sculpt/Smooth"
     )
-    custom_sculpt_brush_7: EnumProperty(
+    custom_sculpt_brush_7: StringProperty(
         name="Brush 7 (Bottom-Left)",
-        description="Asset path for brush 7",
-        items=get_sculpt_brush_items,
+        description="Asset path for brush 7 (e.g., Brushes/mesh_sculpt/Crease)",
         default="Brushes/mesh_sculpt/Crease"
     )
-    custom_sculpt_brush_8: EnumProperty(
+    custom_sculpt_brush_8: StringProperty(
         name="Brush 8 (Bottom-Right)",
-        description="Asset path for brush 8",
-        items=get_sculpt_brush_items,
+        description="Asset path for brush 8 (e.g., Brushes/mesh_sculpt/Flatten)",
         default="Brushes/mesh_sculpt/Flatten"
     )
 
@@ -458,7 +416,8 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             box = col.box()
             box.scale_y = .9
             box.label(text="CUSTOM SCULPT BRUSHES (Blender 5.0+)")
-            box.label(text="Select brushes from Essentials library for pie menu positions")
+            box.label(text="Enter brush asset paths for pie menu positions")
+            box.label(text="Example: Brushes/mesh_sculpt/Draw")
             col.prop(self, "custom_sculpt_brush_1")
             col.prop(self, "custom_sculpt_brush_2")
             col.prop(self, "custom_sculpt_brush_3")

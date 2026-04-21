@@ -16,8 +16,7 @@ module_names = (
     "pie_ops.pie_proportional",
     "pie_ops.pie_keyframing",
     "pie_ops.pie_save",
-    "pie_ops.pie_align",
-    "pie_ops.pie_edgeflow"
+    "pie_ops.pie_align"
 )
 modules = []
 for mod in module_names:

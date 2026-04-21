@@ -5,6 +5,7 @@ version = "2.0.0"
 name = "Pie Menus Plus"
 tagline = "Improved Pie Menu ecosystem for Blender 5.0+"
 maintainer = "Tabzy"
+website = "https://github.com/CloudyTabzy/PieMenusPlus"
 type = "add-on"
 
 tags = ["3D View",]

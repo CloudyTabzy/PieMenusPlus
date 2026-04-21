@@ -245,6 +245,48 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
         description="Allows for snapping directly to the center of any face on the object being edited (WARNING: This operation can be very slow in bigger scenes)"
     )
 
+    # Custom Sculpt Brushes (Blender 5.0+)
+    custom_sculpt_brush_1: StringProperty(
+        name="Brush 1 (Left)",
+        description="Asset path for brush 1 (e.g., Brushes/mesh_sculpt/Draw)",
+        default="Brushes/mesh_sculpt/Draw"
+    )
+    custom_sculpt_brush_2: StringProperty(
+        name="Brush 2 (Right)",
+        description="Asset path for brush 2 (e.g., Brushes/mesh_sculpt/Blob)",
+        default="Brushes/mesh_sculpt/Blob"
+    )
+    custom_sculpt_brush_3: StringProperty(
+        name="Brush 3 (Bottom)",
+        description="Asset path for brush 3 (e.g., Brushes/mesh_sculpt/Clay)",
+        default="Brushes/mesh_sculpt/Clay"
+    )
+    custom_sculpt_brush_4: StringProperty(
+        name="Brush 4 (Top)",
+        description="Asset path for brush 4 (e.g., Brushes/mesh_sculpt/Clay Strips)",
+        default="Brushes/mesh_sculpt/Clay Strips"
+    )
+    custom_sculpt_brush_5: StringProperty(
+        name="Brush 5 (Top-Left)",
+        description="Asset path for brush 5 (e.g., Brushes/mesh_sculpt/Inflate)",
+        default="Brushes/mesh_sculpt/Inflate"
+    )
+    custom_sculpt_brush_6: StringProperty(
+        name="Brush 6 (Top-Right)",
+        description="Asset path for brush 6 (e.g., Brushes/mesh_sculpt/Smooth)",
+        default="Brushes/mesh_sculpt/Smooth"
+    )
+    custom_sculpt_brush_7: StringProperty(
+        name="Brush 7 (Bottom-Left)",
+        description="Asset path for brush 7 (e.g., Brushes/mesh_sculpt/Crease)",
+        default="Brushes/mesh_sculpt/Crease"
+    )
+    custom_sculpt_brush_8: StringProperty(
+        name="Brush 8 (Bottom-Right)",
+        description="Asset path for brush 8 (e.g., Brushes/mesh_sculpt/Flatten)",
+        default="Brushes/mesh_sculpt/Flatten"
+    )
+
     # Selection Prefs
     invert_selection_pref: BoolProperty(
         description="Only deselect all objects if all object are selected (versus deselecting if any selection is made)"
@@ -344,6 +386,22 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             box.scale_y = .9
             box.label(text="DEBUG (Blender 5.0+)")
             col.prop(self, "debug_context_logging", text="Enable Context Logging")
+
+            col = layout.column(align = True)
+            col.separator()
+            box = col.box()
+            box.scale_y = .9
+            box.label(text="CUSTOM SCULPT BRUSHES (Blender 5.0+)")
+            box.label(text="Enter asset paths for custom brushes")
+            box.label(text="Example: Brushes/mesh_sculpt/Draw")
+            col.prop(self, "custom_sculpt_brush_1")
+            col.prop(self, "custom_sculpt_brush_2")
+            col.prop(self, "custom_sculpt_brush_3")
+            col.prop(self, "custom_sculpt_brush_4")
+            col.prop(self, "custom_sculpt_brush_5")
+            col.prop(self, "custom_sculpt_brush_6")
+            col.prop(self, "custom_sculpt_brush_7")
+            col.prop(self, "custom_sculpt_brush_8")
 
             col = layout.column(align = True)
             col.separator()

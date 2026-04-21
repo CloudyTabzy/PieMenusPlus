@@ -3,6 +3,7 @@ from bpy.types import Menu, Operator
 from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
 
 from .utils import get_addon_preferences
+from .pie_ops.pie_edgeflow import PIESPLUS_MT_edgeflow
 
 
 ########################################

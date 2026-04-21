@@ -1,5 +1,6 @@
 import bpy
-from bpy.types import Operator
+from bpy.types import Operator, Context, Event
+from typing import Set
 from ..utils import OpInfo
 
 
@@ -8,7 +9,7 @@ class PIESPLUS_OT_edit_mode(OpInfo, Operator):
     bl_label = "Object Mode"
     bl_description = "Changes the Context Mode to Object Mode"
 
-    def execute(self, context):
+    def execute(self, context: Context) -> Set[str]:
         context.view_layer.objects.active = context.selected_objects[0]
 
         bpy.ops.object.mode_set(mode="EDIT")
@@ -20,7 +21,7 @@ class PIESPLUS_OT_particle_edit(OpInfo, Operator):
     bl_label = "Particle Edit"
     bl_description = "Changes the Context Mode to Particle Edit Mode"
 
-    def execute(self, _context):
+    def execute(self, _context: Context) -> Set[str]:
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.particle.particle_edit_toggle()
         return {'FINISHED'}
@@ -34,7 +35,7 @@ class PIESPLUS_OT_vertex(OpInfo, Operator):
     bl_idname = "pies_plus.vertex"
     bl_label = "Vertex"
 
-    def invoke(self, context, event):
+    def invoke(self, context: Context, event: Event) -> Set[str]:
         bpy.ops.object.mode_set(mode="EDIT")
         if not context.tool_settings.use_uv_select_sync \
         and bpy.ops.uv.select_mode.poll():
@@ -56,7 +57,7 @@ class PIESPLUS_OT_edge(OpInfo, Operator):
     bl_idname = "pies_plus.edge"
     bl_label = "Edge"
 
-    def invoke(self, context, event):
+    def invoke(self, context: Context, event: Event) -> Set[str]:
         bpy.ops.object.mode_set(mode="EDIT")
         if not context.tool_settings.use_uv_select_sync \
         and bpy.ops.uv.select_mode.poll():
@@ -78,7 +79,7 @@ class PIESPLUS_OT_face(OpInfo, Operator):
     bl_idname = "pies_plus.face"
     bl_label = "Face"
 
-    def invoke(self, context, event):
+    def invoke(self, context: Context, event: Event) -> Set[str]:
         bpy.ops.object.mode_set(mode="EDIT")
         if not context.tool_settings.use_uv_select_sync \
         and bpy.ops.uv.select_mode.poll():
@@ -109,7 +110,7 @@ class PIESPLUS_OT_UV_sel_change(Operator):
         name='Selection Choice'
     )
 
-    def execute(self, context):
+    def execute(self, context: Context) -> Set[str]:
         context.scene.tool_settings.uv_select_mode = self.sel_choice.upper()
         return {'FINISHED'}
 
@@ -119,7 +120,7 @@ class PIESPLUS_OT_overlays(OpInfo, Operator):
     bl_label = "Overlay Toggle"
     bl_description = "Toggles the viewport Overlays"
 
-    def execute(self, context):
+    def execute(self, context: Context) -> Set[str]:
         context.space_data.overlay.show_overlays = not context.space_data.overlay.show_overlays
         return {'FINISHED'}
 

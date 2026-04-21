@@ -256,6 +256,13 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
         description="Move the sculpt mode button to the main array of context mode operators, so that you can quickly switch between the modes"
     )
 
+    # Debug Prefs (Blender 5.0+)
+    debug_context_logging: BoolProperty(
+        name="Enable Context Logging",
+        description="Log context member access for debugging (Blender 5.0+ feature)",
+        default=False
+    )
+
     def draw(self, context):
         layout = self.layout
         row = layout.row()
@@ -323,6 +330,13 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             box.label(text="SNAPPING")
             col.prop(self, "auto_enable_snap_pref", text="Enable Snapping when Changing Snap Pie Settings")
             col.prop(self, "auto_enable_abs_grid_snap_pref", text="Enable Absolute Grid Snap when Turning on Incremental Snapping")
+
+            col = layout.column(align = True)
+            col.separator()
+            box = col.box()
+            box.scale_y = .9
+            box.label(text="DEBUG (Blender 5.0+)")
+            col.prop(self, "debug_context_logging", text="Enable Context Logging")
 
             col = layout.column(align = True)
             col.separator()

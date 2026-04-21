@@ -36,8 +36,7 @@ class PIESPLUS_OT_vertex(OpInfo, Operator):
 
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
-        if bpy.app.version >= (5, 0, 0) \
-        and not context.tool_settings.use_uv_select_sync \
+        if not context.tool_settings.use_uv_select_sync \
         and bpy.ops.uv.select_mode.poll():
             bpy.ops.uv.select_mode(type='VERTEX')
             return {'FINISHED'}
@@ -59,8 +58,7 @@ class PIESPLUS_OT_edge(OpInfo, Operator):
 
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
-        if bpy.app.version >= (5, 0, 0) \
-        and not context.tool_settings.use_uv_select_sync \
+        if not context.tool_settings.use_uv_select_sync \
         and bpy.ops.uv.select_mode.poll():
             bpy.ops.uv.select_mode(type='EDGE')
             return {'FINISHED'}
@@ -82,8 +80,7 @@ class PIESPLUS_OT_face(OpInfo, Operator):
 
     def invoke(self, context, event):
         bpy.ops.object.mode_set(mode="EDIT")
-        if bpy.app.version >= (5, 0, 0) \
-        and not context.tool_settings.use_uv_select_sync \
+        if not context.tool_settings.use_uv_select_sync \
         and bpy.ops.uv.select_mode.poll():
             bpy.ops.uv.select_mode(type='FACE')
             return {'FINISHED'}

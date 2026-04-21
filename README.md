@@ -9,7 +9,6 @@
   - [Extras](#extras)
     - [Extended origin and cursor manipulation](#extended-origin-and-cursor-manipulation)
     - [Improved Separate](#improved-separate)
-- [Installation Guide](#installation-guide)
 
 &nbsp;
 &nbsp;
@@ -63,7 +62,3 @@ Most operators contained within the Origin / Cursor pie have access to the `Copy
 
 ### Improved Separate
 Added `Remove Modifiers` tick to the Redo Panel of the operator for situations where modifiers make separated objects completely unselectable in the 3D View.
-
-# Installation guide
-1. Click the **Code** button in the top right of the repo & click **Download ZIP** in the dropdown (Do not unpack the ZIP file)
-2. Install the add-on in Blender through Edit > Preferences > Add-ons > Install...

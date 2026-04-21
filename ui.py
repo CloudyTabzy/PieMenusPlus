@@ -130,6 +130,32 @@ class PIESPLUS_OT_activate_sculpt_brush(Operator):
         return {'FINISHED'}
 
 
+class PIESPLUS_OT_activate_custom_sculpt_brush(Operator):
+    bl_idname = "pies_plus.activate_custom_sculpt_brush"
+    bl_label = "Activate Custom Sculpt Brush"
+    bl_description = "Activate a custom sculpt brush from preferences"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    brush_path: bpy.props.StringProperty(name="Brush Path")
+
+    def execute(self, context):
+        if not self.brush_path:
+            self.report({'WARNING'}, "No brush path specified")
+            return {'CANCELLED'}
+
+        try:
+            # Blender 5.0+ brush asset activation
+            bpy.ops.brush.asset_activate(
+                asset_library_type='ESSENTIALS',
+                asset_library_identifier='',
+                relative_asset_identifier=self.brush_path
+            )
+            self.report({'INFO'}, f"Activated brush: {self.brush_path}")
+        except Exception as e:
+            self.report({'WARNING'}, f"Could not activate brush: {self.brush_path}")
+        return {'FINISHED'}
+
+
 class PIESPLUS_OT_paint_brushes_popup(Operator):
     bl_idname = "pies_plus.paint_brushes_popup"
     bl_label = "Paint Brushes"
@@ -1383,22 +1409,24 @@ class PIESPLUS_MT_sculpt(Menu):
         pie = layout.menu_pie()
         layout.scale_y = 1.2
 
+        prefs = get_addon_preferences()
+
         # 4 - LEFT
-        pie.operator("paint.brush_select", text="    Crease").sculpt_brush_type = 'CREASE'
+        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 1").brush_path = prefs.custom_sculpt_brush_1
         # 6 - RIGHT
-        pie.operator("paint.brush_select", text="    Blob").sculpt_brush_type = 'BLOB'
+        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 2").brush_path = prefs.custom_sculpt_brush_2
         # 2 - BOTTOM
         pie.menu("PIESPLUS_MT_sculpt_brushes", text="    Brushes...")
         # 8 - TOP
-        pie.operator("paint.brush_select", text="    Draw").sculpt_brush_type = 'DRAW'
+        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 3").brush_path = prefs.custom_sculpt_brush_3
         # 7 - TOP - LEFT
-        pie.operator("paint.brush_select", text="    Clay").sculpt_brush_type = 'CLAY'
+        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 4").brush_path = prefs.custom_sculpt_brush_4
         # 9 - TOP - RIGHT
-        pie.operator("paint.brush_select", text="    Clay Strips").sculpt_brush_type = 'CLAY_STRIPS'
+        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 5").brush_path = prefs.custom_sculpt_brush_5
         # 1 - BOTTOM - LEFT
-        pie.operator("paint.brush_select", text="    Inflate / Deflate").sculpt_brush_type = 'INFLATE'
+        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 6").brush_path = prefs.custom_sculpt_brush_6
         # 3 - BOTTOM - RIGHT
-        pie.menu("PIESPLUS_MT_sculpt_grab", text="    Grab...")
+        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 7").brush_path = prefs.custom_sculpt_brush_7
 
 
 class PIESPLUS_MT_sculpt_more(Menu):
@@ -1690,6 +1718,7 @@ classes = (
     PIESPLUS_MT_align,
     PIESPLUS_MT_mark_edge,
     PIESPLUS_OT_activate_sculpt_brush,
+    PIESPLUS_OT_activate_custom_sculpt_brush,
 )
 
 

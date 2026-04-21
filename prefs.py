@@ -276,7 +276,7 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
         layout = self.layout
         row = layout.row()
 
-        row.operator("wm.url_open", text="", icon = 'URL').url = "https://gumroad.com/l/piesplus"
+        row.operator("wm.url_open", text="", icon = 'URL').url = "https://github.com/CloudyTabzy/PieMenusPlus"
 
         row = layout.row()
         row.prop(self, "tabs", expand=True)

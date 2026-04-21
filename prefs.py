@@ -4,6 +4,8 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup, Operator, AddonPreferences, Scene
 
+# Blender 5.0+ note: rna_keymap_ui is now private, using simpler approach
+
 from .utils import get_addon_preferences
 
 
@@ -114,12 +116,8 @@ class PIESPLUS_addon_keymaps:
     def get_hotkey_entry_item(name, kc, km, kmi_name, kmi_value, col):
         for km_item in km.keymap_items:
             if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
-                row = col.row()
-                row.context_pointer_set('keymap', km)
-                row.context_pointer_set('keymap_item', km_item)
-                row.label(text="", icon='KEYBOARD')
-                row.label(text=km_item.to_string())
-                row.operator(PIESPLUS_OT_remove_hotkey.bl_idname, text="", icon='X')
+                col.label(text="", icon='KEYBOARD')
+                col.label(text=km_item.to_string())
                 return
 
         col.label(text=f"No hotkey entry found for {name}")
@@ -170,20 +168,6 @@ class PIESPLUS_OT_add_hotkey(Operator):
             km.restore_to_default()
             context.preferences.is_dirty = True
         context.preferences.active_section = 'ADDONS'
-        return {'FINISHED'}
-
-
-class PIESPLUS_OT_remove_hotkey(Operator):
-    bl_idname = "pies_plus.remove_hotkey"
-    bl_label = "Remove Hotkey"
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        km = context.keymap
-        km_item = context.keymap_item
-        if km and km_item:
-            km.keymap_items.remove(km_item)
-            context.preferences.is_dirty = True
         return {'FINISHED'}
 
 
@@ -388,7 +372,6 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
 classes = (
     PIESPLUS_MT_addon_prefs,
     PIESPLUS_OT_add_hotkey,
-    PIESPLUS_OT_remove_hotkey,
     PIESPLUS_property_group
 )
 

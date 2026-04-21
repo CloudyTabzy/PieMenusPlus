@@ -4,7 +4,7 @@ id = "PieMenusPlus"
 version = "2.0.0"
 name = "Pie Menus Plus"
 tagline = "Improved Pie Menu ecosystem for Blender 5.0+"
-maintainer = "Ethan Simon-Law <ethan.simon.3d@gmail.com>"
+maintainer = "Tabzy"
 type = "add-on"
 
 website = "https://discord.com/invite/wHAyVZG"

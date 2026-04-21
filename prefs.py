@@ -114,9 +114,12 @@ class PIESPLUS_addon_keymaps:
     def get_hotkey_entry_item(name, kc, km, kmi_name, kmi_value, col):
         for km_item in km.keymap_items:
             if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
-                col.context_pointer_set('keymap', km)
-                col.context_pointer_set('keymap_item', km_item)
-                col.operator("wm.keymap_item_remove", text="", icon='X')
+                row = col.row()
+                row.context_pointer_set('keymap', km)
+                row.context_pointer_set('keymap_item', km_item)
+                row.label(text="", icon='KEYBOARD')
+                row.label(text=km_item.to_string())
+                row.operator("wm.keymap_item_remove", text="", icon='X')
                 return
 
         col.label(text=f"No hotkey entry found for {name}")

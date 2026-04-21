@@ -179,11 +179,8 @@ class PIESPLUS_MT_UV_modes(Menu):
         # 7 - TOP - LEFT
         pie.separator()
         # 9 - TOP - RIGHT
-        if bpy.app.version >= (5, 0, 0):
-            pie.prop(context.tool_settings, "use_uv_select_island",
-                     text='Island', icon='UV_ISLANDSEL')
-        else:
-            pie.operator("pies_plus.uv_sel_change", text='Island', icon='UV_ISLANDSEL').sel_choice = 'island'
+        pie.prop(context.tool_settings, "use_uv_select_island",
+                 text='Island', icon='UV_ISLANDSEL')
 
 
 ########################################
@@ -263,17 +260,6 @@ class PIESPLUS_MT_snapping(Menu):
         # 1 - BOTTOM - LEFT
         col = pie.column()
 
-        gap = col.column()
-        gap.separator()
-
-        if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-            gap.scale_y = 3.5
-
-            box = col.box().column()
-            box.scale_y = 1.2
-
-            box.operator("pies_plus.snap", text="Edge Center", icon='SNAP_MIDPOINT').snap_elements = 'edge_center'
-            box.operator("pies_plus.snap", text="Edge Perpendicular", icon='SNAP_PERPENDICULAR').snap_elements = 'edge_perp'
         # 3 - BOTTOM - RIGHT
         col = pie.column()
 
@@ -366,10 +352,7 @@ class PIESPLUS_MT_looptools(Menu):
         layout = self.layout
         pie = layout.menu_pie()
 
-        if bpy.app.version >= (4, 2, 0):
-            addon_name = 'bl_ext.blender_org.looptools'
-        else:
-            addon_name = 'mesh_looptools'
+        addon_name = 'bl_ext.blender_org.looptools'
         if addon_name not in context.preferences.addons.keys():
             pie.label(text="          WARNING: You must have LoopTools enabled")
             return
@@ -411,32 +394,19 @@ class PIESPLUS_MT_booltool(Menu):
         if not context.active_object:
             pie.label(text="          WARNING: You must have an Active Object selected")
             return
-        if bpy.app.version >= (4, 2, 0):
-            addon_name = 'bl_ext.blender_org.bool_tool'
-        else:
-            addon_name = 'object_boolean_tools'
+        addon_name = 'bl_ext.blender_org.bool_tool'
         if addon_name not in context.preferences.addons.keys():
             pie.label(text="          WARNING: You must have Bool Tool enabled")
             return
 
-        if bpy.app.version >= (4, 2, 0):
-            boolean_auto_slice       = "object.boolean_auto_slice"
-            boolean_brush_slice      = "object.boolean_brush_slice"
-            boolean_auto_difference  = "object.boolean_auto_difference"
-            boolean_brush_difference = "object.boolean_brush_difference"
-            boolean_brush_intersect  = "object.boolean_brush_intersect"
-            boolean_brush_union      = "object.boolean_brush_union"
-            boolean_auto_union       = "object.boolean_auto_union"
-            boolean_auto_intersect   = "object.boolean_auto_intersect"
-        else:
-            boolean_auto_slice       = "object.booltool_auto_slice"
-            boolean_brush_slice      = "btool.boolean_slice"
-            boolean_auto_difference  = "object.booltool_auto_difference"
-            boolean_brush_difference = "btool.boolean_diff"
-            boolean_brush_intersect  = "btool.boolean_inters"
-            boolean_brush_union      = "btool.boolean_union"
-            boolean_auto_union       = "object.booltool_auto_union"
-            boolean_auto_intersect   = "object.booltool_auto_intersect"
+        boolean_auto_slice       = "object.boolean_auto_slice"
+        boolean_brush_slice      = "object.boolean_brush_slice"
+        boolean_auto_difference  = "object.boolean_auto_difference"
+        boolean_brush_difference = "object.boolean_brush_difference"
+        boolean_brush_intersect  = "object.boolean_brush_intersect"
+        boolean_brush_union      = "object.boolean_brush_union"
+        boolean_auto_union       = "object.boolean_auto_union"
+        boolean_auto_intersect   = "object.boolean_auto_intersect"
 
         # 4 - LEFT
         pie.operator(boolean_auto_slice,
@@ -1130,47 +1100,26 @@ class PIESPLUS_MT_sculpt(Menu):
     bl_label = "Sculpt Tools"
 
     def draw(self, context):
-        if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-            global brush_icons
-
         layout = self.layout
         pie = layout.menu_pie()
         layout.scale_y = 1.2
 
-        if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-            # 4 - LEFT
-            pie.operator("paint.brush_select", text="    Crease", icon_value=brush_icons["crease"]).sculpt_tool = 'CREASE'
-            # 6 - RIGHT
-            pie.operator("paint.brush_select", text="    Blob", icon_value=brush_icons["blob"]).sculpt_tool = 'BLOB'
-            # 2 - BOTTOM
-            pie.menu("PIESPLUS_MT_sculpt_more", text="    More...")
-            # 8 - TOP
-            pie.operator("paint.brush_select", text="    Draw", icon_value=brush_icons["draw"]).sculpt_tool = 'DRAW'
-            # 7 - TOP - LEFT
-            pie.operator("paint.brush_select", text="    Clay", icon_value=brush_icons["clay"]).sculpt_tool = 'CLAY'
-            # 9 - TOP - RIGHT
-            pie.operator("paint.brush_select", text="    Clay Strips", icon_value=brush_icons["clay_strips"]).sculpt_tool = 'CLAY_STRIPS'
-            # 1 - BOTTOM - LEFT
-            pie.operator("paint.brush_select", text="    Inflate / Deflate", icon_value=brush_icons["inflate"]).sculpt_tool = 'INFLATE'
-            # 3 - BOTTOM - RIGHT
-            pie.menu("PIESPLUS_MT_sculpt_grab", text="    Grab...", icon_value=brush_icons["grab"])
-        else:
-            # 4 - LEFT
-            pie.operator("paint.brush_select", text="    Crease").sculpt_tool = 'CREASE'
-            # 6 - RIGHT
-            pie.operator("paint.brush_select", text="    Blob").sculpt_tool = 'BLOB'
-            # 2 - BOTTOM
-            pie.menu("PIESPLUS_MT_sculpt_more", text="    More...")
-            # 8 - TOP
-            pie.operator("paint.brush_select", text="    Draw").sculpt_tool = 'DRAW'
-            # 7 - TOP - LEFT
-            pie.operator("paint.brush_select", text="    Clay").sculpt_tool = 'CLAY'
-            # 9 - TOP - RIGHT
-            pie.operator("paint.brush_select", text="    Clay Strips").sculpt_tool = 'CLAY_STRIPS'
-            # 1 - BOTTOM - LEFT
-            pie.operator("paint.brush_select", text="    Inflate / Deflate").sculpt_tool = 'INFLATE'
-            # 3 - BOTTOM - RIGHT
-            pie.menu("PIESPLUS_MT_sculpt_grab", text="    Grab...")
+        # 4 - LEFT
+        pie.operator("paint.brush_select", text="    Crease").sculpt_brush_type = 'CREASE'
+        # 6 - RIGHT
+        pie.operator("paint.brush_select", text="    Blob").sculpt_brush_type = 'BLOB'
+        # 2 - BOTTOM
+        pie.menu("PIESPLUS_MT_sculpt_more", text="    More...")
+        # 8 - TOP
+        pie.operator("paint.brush_select", text="    Draw").sculpt_brush_type = 'DRAW'
+        # 7 - TOP - LEFT
+        pie.operator("paint.brush_select", text="    Clay").sculpt_brush_type = 'CLAY'
+        # 9 - TOP - RIGHT
+        pie.operator("paint.brush_select", text="    Clay Strips").sculpt_brush_type = 'CLAY_STRIPS'
+        # 1 - BOTTOM - LEFT
+        pie.operator("paint.brush_select", text="    Inflate / Deflate").sculpt_brush_type = 'INFLATE'
+        # 3 - BOTTOM - RIGHT
+        pie.menu("PIESPLUS_MT_sculpt_grab", text="    Grab...")
 
 
 class PIESPLUS_MT_sculpt_more(Menu):
@@ -1178,30 +1127,18 @@ class PIESPLUS_MT_sculpt_more(Menu):
     bl_label = ""
 
     def draw(self, context):
-        if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-            global brush_icons
-
         layout = self.layout
         layout.scale_y = 1.2
 
-        if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-            layout.operator("paint.brush_select", text='    Smooth', icon_value=brush_icons["smooth"]).sculpt_tool = 'SMOOTH'
-            layout.operator("paint.brush_select", text='    Flatten', icon_value=brush_icons["flatten"]).sculpt_tool = 'FLATTEN'
-            layout.operator("paint.brush_select", text='    Scrape / Peaks', icon_value=brush_icons["scrape"]).sculpt_tool = 'SCRAPE'
-            layout.operator("paint.brush_select", text='    Fill / Deepen', icon_value=brush_icons["fill"]).sculpt_tool = 'FILL'
-            if bpy.app.version >= (2, 83, 0):
-                layout.operator("paint.brush_select", text='    Clay Thumb', icon_value=brush_icons["clay_thumb"]).sculpt_tool = 'CLAY_THUMB'
-                layout.operator("paint.brush_select", text='    Cloth', icon_value=brush_icons["cloth"]).sculpt_tool = 'CLOTH'
-                layout.operator("paint.brush_select", text='    Face Sets', icon_value=brush_icons["draw_face_sets"]).sculpt_tool = 'DRAW_FACE_SETS'
-            layout.operator("paint.brush_select", text='    Layer', icon_value=brush_icons["layer"]).sculpt_tool = 'LAYER'
-            layout.operator("paint.brush_select", text='    Mask', icon_value=brush_icons["mask"]).sculpt_tool = 'MASK'
-        else:
-            layout.operator("paint.brush_select", text='    Smooth').sculpt_tool = 'SMOOTH'
-            layout.operator("paint.brush_select", text='    Flatten').sculpt_tool = 'FLATTEN'
-            layout.operator("paint.brush_select", text='    Scrape / Peaks').sculpt_tool = 'SCRAPE'
-            layout.operator("paint.brush_select", text='    Fill / Deepen').sculpt_tool = 'FILL'
-            layout.operator("paint.brush_select", text='    Layer').sculpt_tool = 'LAYER'
-            layout.operator("paint.brush_select", text='    Mask').sculpt_tool = 'MASK'
+        layout.operator("paint.brush_select", text='    Smooth').sculpt_brush_type = 'SMOOTH'
+        layout.operator("paint.brush_select", text='    Flatten').sculpt_brush_type = 'FLATTEN'
+        layout.operator("paint.brush_select", text='    Scrape / Peaks').sculpt_brush_type = 'SCRAPE'
+        layout.operator("paint.brush_select", text='    Fill / Deepen').sculpt_brush_type = 'FILL'
+        layout.operator("paint.brush_select", text='    Clay Thumb').sculpt_brush_type = 'CLAY_THUMB'
+        layout.operator("paint.brush_select", text='    Cloth').sculpt_brush_type = 'CLOTH'
+        layout.operator("paint.brush_select", text='    Face Sets').sculpt_brush_type = 'DRAW_FACE_SETS'
+        layout.operator("paint.brush_select", text='    Layer').sculpt_brush_type = 'LAYER'
+        layout.operator("paint.brush_select", text='    Mask').sculpt_brush_type = 'MASK'
 
 
 class PIESPLUS_MT_sculpt_grab(Menu):
@@ -1209,28 +1146,17 @@ class PIESPLUS_MT_sculpt_grab(Menu):
     bl_label = ""
 
     def draw(self, context):
-        if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-            global brush_icons
-
         layout = self.layout
         layout.scale_y = 1.2
 
-        if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-            layout.operator("paint.brush_select", text='    Grab', icon_value=brush_icons["grab"]).sculpt_tool = 'GRAB'
-            layout.operator("paint.brush_select", text='    Pinch / Magnify', icon_value=brush_icons["pinch"]).sculpt_tool = 'PINCH'
-            layout.operator("paint.brush_select", text='    Elastic Deform', icon_value=brush_icons["elastic_deform"]).sculpt_tool = 'ELASTIC_DEFORM'
-            layout.operator("paint.brush_select", text='    Snake Hook', icon_value=brush_icons["snake_hook"]).sculpt_tool = 'SNAKE_HOOK'
-            layout.operator("paint.brush_select", text='    Thumb', icon_value=brush_icons["thumb"]).sculpt_tool = 'THUMB'
-            layout.operator("paint.brush_select", text='    Pose', icon_value=brush_icons["pose"]).sculpt_tool = 'POSE'
-            layout.operator("paint.brush_select", text='    Nudge', icon_value=brush_icons["nudge"]).sculpt_tool = 'NUDGE'
-            layout.operator("paint.brush_select", text='    Rotate', icon_value=brush_icons["rotate"]).sculpt_tool = 'ROTATE'
-        else:
-            layout.operator("paint.brush_select", text='    Grab').sculpt_tool = 'GRAB'
-            layout.operator("paint.brush_select", text='    Pinch / Magnify').sculpt_tool = 'PINCH'
-            layout.operator("paint.brush_select", text='    Snake Hook').sculpt_tool = 'SNAKE_HOOK'
-            layout.operator("paint.brush_select", text='    Thumb').sculpt_tool = 'THUMB'
-            layout.operator("paint.brush_select", text='    Nudge').sculpt_tool = 'NUDGE'
-            layout.operator("paint.brush_select", text='    Rotate').sculpt_tool = 'ROTATE'
+        layout.operator("paint.brush_select", text='    Grab').sculpt_brush_type = 'GRAB'
+        layout.operator("paint.brush_select", text='    Pinch / Magnify').sculpt_brush_type = 'PINCH'
+        layout.operator("paint.brush_select", text='    Elastic Deform').sculpt_brush_type = 'ELASTIC_DEFORM'
+        layout.operator("paint.brush_select", text='    Snake Hook').sculpt_brush_type = 'SNAKE_HOOK'
+        layout.operator("paint.brush_select", text='    Thumb').sculpt_brush_type = 'THUMB'
+        layout.operator("paint.brush_select", text='    Pose').sculpt_brush_type = 'POSE'
+        layout.operator("paint.brush_select", text='    Nudge').sculpt_brush_type = 'NUDGE'
+        layout.operator("paint.brush_select", text='    Rotate').sculpt_brush_type = 'ROTATE'
 
 
 ########################################
@@ -1458,33 +1384,6 @@ class PIESPLUS_MT_mark_edge(Menu):
 ##############################
 
 
-brush_icons = {}
-
-def create_icons():
-    global brush_icons
-
-    icons_directory = bpy.utils.system_resource('DATAFILES', "icons")
-
-    brushes = [
-        "crease", "blob", "smooth", "draw", "clay", "clay_strips", "inflate", "grab", "nudge", "thumb",
-        "snake_hook", "rotate", "flatten", "scrape", "fill", "pinch", "layer", "mask", "pose", "elastic_deform"
-    ]
-
-    if bpy.app.version >= (2, 83, 0):
-        brushes += ["cloth", "clay_thumb", "draw_face_sets"]
-
-    for brush in brushes:
-        filename = os.path.join(icons_directory, f"brush.sculpt.{brush}.dat")
-        icon_value = bpy.app.icons.new_triangles_from_file(filename)
-        brush_icons[brush] = icon_value
-
-def release_icons():
-    global brush_icons
-
-    for value in brush_icons.values():
-        bpy.app.icons.release(value)
-
-
 classes = (
     PIESPLUS_MT_modes,
     PIESPLUS_MT_UV_modes,
@@ -1514,17 +1413,11 @@ classes = (
 
 
 def register():
-    if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-        create_icons()
-
     for cls in classes:
         bpy.utils.register_class(cls)
 
 
 def unregister():
-    if bpy.app.version >= (2, 81, 0) and bpy.app.version < (3, 0, 0):
-        release_icons()
-
     for cls in classes:
         bpy.utils.unregister_class(cls)
 

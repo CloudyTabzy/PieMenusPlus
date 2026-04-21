@@ -1,4 +1,4 @@
-import bpy, rna_keymap_ui
+import bpy
 from bpy.props import (
     StringProperty, EnumProperty, BoolProperty, IntProperty, PointerProperty
 )
@@ -115,7 +115,8 @@ class PIESPLUS_addon_keymaps:
         for km_item in km.keymap_items:
             if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
                 col.context_pointer_set('keymap', km)
-                rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
+                col.context_pointer_set('keymap_item', km_item)
+                col.operator("wm.keymap_item_remove", text="", icon='X')
                 return
 
         col.label(text=f"No hotkey entry found for {name}")

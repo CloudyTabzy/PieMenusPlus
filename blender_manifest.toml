@@ -1,9 +1,9 @@
 schema_version = "1.0.0"
 
 id = "PieMenusPlus"
-version = "1.4.2"
+version = "2.0.0"
 name = "Pie Menus Plus"
-tagline = "Improved Pie Menu ecosystem for Blender 2.8-5.0 and beyond"
+tagline = "Improved Pie Menu ecosystem for Blender 5.0+"
 maintainer = "Ethan Simon-Law <ethan.simon.3d@gmail.com>"
 type = "add-on"
 
@@ -11,7 +11,7 @@ website = "https://discord.com/invite/wHAyVZG"
 
 tags = ["3D View",]
 
-blender_version_min = "4.2.0"
+blender_version_min = "5.0.0"
 
 license = [
   "SPDX:GPL-3.0-or-later",

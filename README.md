@@ -19,6 +19,8 @@
 # Introduction
 Welcome to the Git version of Pie Menus Plus! This page will host "volatile" releases of the add-on, although it is a very stable tool all around in its inherent simplicity.
 
+**Note: Version 2.0.0 and later require Blender 5.0 or higher.** For older Blender versions, please use version 1.4.2 or earlier.
+
 If you are looking for stable full releases of the add-on, check out the Releases tab or head on over to the Gumroad product page linked below.
 
 [Product Page](https://gumroad.com/l/piesplus)

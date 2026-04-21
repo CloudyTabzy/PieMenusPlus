@@ -164,12 +164,8 @@ class PIESPLUS_OT_auto_fwn(OpInfo, Operator):
                     pies_plus_prefs.fwn_weight_value_pref
                 ob.modifiers["Weighted Normal"].keep_sharp = \
                     pies_plus_prefs.fwn_keep_sharps_pref
-                if bpy.app.version >= (2, 91, 0):
-                    ob.modifiers["Weighted Normal"].use_face_influence = \
-                        pies_plus_prefs.fwn_face_influence_pref
-                else:
-                    ob.modifiers["Weighted Normal"].face_influence = \
-                        pies_plus_prefs.fwn_face_influence_pref
+                ob.modifiers["Weighted Normal"].use_face_influence = \
+                    pies_plus_prefs.fwn_face_influence_pref
 
         if 'saved_active' in locals():
             context.view_layer.objects.active = saved_active

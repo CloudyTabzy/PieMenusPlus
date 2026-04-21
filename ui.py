@@ -352,8 +352,8 @@ class PIESPLUS_MT_looptools(Menu):
         layout = self.layout
         pie = layout.menu_pie()
 
-        addon_name = 'bl_ext.blender_org.looptools'
-        if addon_name not in context.preferences.addons.keys():
+        # Check if LoopTools operators exist
+        if not hasattr(bpy.ops.mesh, 'looptools_relax'):
             pie.label(text="          WARNING: You must have LoopTools enabled")
             return
 
@@ -394,8 +394,8 @@ class PIESPLUS_MT_booltool(Menu):
         if not context.active_object:
             pie.label(text="          WARNING: You must have an Active Object selected")
             return
-        addon_name = 'bl_ext.blender_org.bool_tool'
-        if addon_name not in context.preferences.addons.keys():
+        # Check if BoolTool operators exist
+        if not hasattr(bpy.ops.object, 'boolean_auto_slice'):
             pie.label(text="          WARNING: You must have Bool Tool enabled")
             return
 

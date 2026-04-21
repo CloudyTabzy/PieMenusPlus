@@ -7,8 +7,6 @@ tagline = "Improved Pie Menu ecosystem for Blender 5.0+"
 maintainer = "Tabzy"
 type = "add-on"
 
-website = "https://discord.com/invite/wHAyVZG"
-
 tags = ["3D View",]
 
 blender_version_min = "5.0.0"

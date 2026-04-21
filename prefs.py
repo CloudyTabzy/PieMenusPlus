@@ -4,12 +4,6 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup, Operator, AddonPreferences, Scene
 
-# Blender 5.0+ note: Try importing from bpy_extras.keymap_ui (public API location)
-try:
-    from bpy_extras import keymap_ui
-except ImportError:
-    keymap_ui = None
-
 from .utils import get_addon_preferences
 
 
@@ -121,11 +115,8 @@ class PIESPLUS_addon_keymaps:
         for km_item in km.keymap_items:
             if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
                 col.context_pointer_set('keymap', km)
-                if keymap_ui is not None:
-                    keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
-                else:
-                    col.label(text="", icon='KEYBOARD')
-                    col.label(text=km_item.to_string())
+                col.context_pointer_set('keymap_item', km_item)
+                col.template_event_from_keymap_item(km_item, km)
                 return
 
         col.label(text=f"No hotkey entry found for {name}")

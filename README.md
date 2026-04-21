@@ -1,5 +1,3 @@
-<img align="right" width="400" src="https://user-images.githubusercontent.com/31065180/220215046-8ba7e52a-1d0c-4f71-9025-088706699176.png" />
-
 ##### Table of Contents
 - [Introduction](#introduction)
 - [Functionality](#functionality)
@@ -17,15 +15,9 @@
 &nbsp;
 
 # Introduction
-Welcome to the Git version of Pie Menus Plus! This page will host "volatile" releases of the add-on, although it is a very stable tool all around in its inherent simplicity.
+Welcome to Pie Menus Plus! This is a free and open-source add-on providing improved pie menus for Blender 5.0+.
 
 **Note: Version 2.0.0 and later require Blender 5.0 or higher.** For older Blender versions, please use version 1.4.2 or earlier.
-
-If you are looking for stable full releases of the add-on, check out the Releases tab or head on over to the Gumroad product page linked below.
-
-[Product Page](https://gumroad.com/l/piesplus)
-
-[Discord Support Server](https://discord.gg/fttAx9g9WQ)
 
 # Available pie menus
 - Select Modes (UV compatible)
@@ -55,30 +47,17 @@ Some functionality is locked behind optional add-ons you can enable within Blend
 Pie Menus Plus overlays keymaps over the standard Blender keymap configuration, meaning uninstalling will maintain the original keymaps. This add-on does not accommodate industry standard keymaps but you can use it at the minor risk of other keymaps becoming "conflicted".
 
 # Stability
-Pie Menus Plus is fundamentally stable due to its inherent simplicity. It often does no more than convert existing operators into a digestible menu of contextually relevant functionality. The only functionality potentially considerable as unstable is the [Extra Tools](#extra-functionality) I tend to integrate into the add-on for larger QOL workflow improvements.
+Pie Menus Plus is fundamentally stable due to its inherent simplicity. It often does no more than convert existing operators into a digestible menu of contextually relevant functionality.
 
 # Extras
-Pie Menus Plus is sort of my do-it-all add-on and as such has some extra goodies I've made that don't really have a home anywhere else, so I threw them in! Here are the important ones:
+Pie Menus Plus includes extra functionality for improved workflow. Here are the important features:
 
 ### Extended origin and cursor manipulation
 Most operators contained within the Origin / Cursor pie have access to the `Copy Active Rotation` tick within the Redo Panel of the operators.
 
-<img src="https://imgur.com/lev0EZX.gif" width="834" height="667"/>
-<img src="https://user-images.githubusercontent.com/31065180/220211533-85ee2a20-f0e5-4aeb-986b-738ba15b45ff.gif" width="830" height="706"/>
-
 ### Improved Separate
 Added `Remove Modifiers` tick to the Redo Panel of the operator for situations where modifiers make separated objects completely unselectable in the 3D View.
 
-<img src="https://imgur.com/N6yp7tj.gif" width="827" height="579"/>
-
 # Installation guide
 1. Click the **Code** button in the top right of the repo & click **Download ZIP** in the dropdown (Do not unpack the ZIP file)
-2. Follow this video for the rest of the simple instructions
-
-https://user-images.githubusercontent.com/31065180/137642217-d51470d3-a243-438f-8c49-1e367a8972ab.mp4
-
-# Support
-
-Pie Menus Plus is a FOSS (Free and Open Source Software) project, which means I see very little return on my time spent developing and maintaining it.
-
-If you would like to support me, consider buying this add-on on [Gumroad](https://razed.gumroad.com/l/piesplus), or if you've already done that, send me a tip on [Ko-fi](https://ko-fi.com/razed)!
+2. Install the add-on in Blender through Edit > Preferences > Add-ons > Install...

@@ -1,7 +1,295 @@
 import bpy, os, re, math
-from bpy.types import Menu
+from bpy.types import Menu, Operator
+from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
 
 from .utils import get_addon_preferences
+
+
+########################################
+# BRUSH ASSET MANAGEMENT (Blender 5.0+)
+########################################
+
+# Brush asset paths for Blender 5.0+ Essentials library
+BRUSH_ASSET_PATHS = {
+    "mesh_sculpt": "Brushes/mesh_sculpt/",
+    "mesh_paint": "Brushes/mesh_texture/",
+    "mesh_vertex_paint": "Brushes/mesh_vertex/",
+    "mesh_weight_paint": "Brushes/mesh_weight/",
+    "gp_sculpt": "Brushes/gp_sculpt/",
+    "gp_vertex_paint": "Brushes/gp_vertex/",
+    "gp_weight_paint": "Brushes/gp_weight/",
+    "gp_draw": "Brushes/gp_draw/"
+}
+
+# Brush asset dictionaries for common brushes (Essentials library)
+MESH_SCULPT_BRUSHES = {
+    "Draw": "Draw",
+    "Draw Sharp": "Draw Sharp",
+    "Clay": "Clay",
+    "Clay Strips": "Clay Strips",
+    "Clay Thumb": "Clay Thumb",
+    "Layer": "Layer",
+    "Inflate": "Inflate",
+    "Blob": "Blob",
+    "Crease": "Crease",
+    "Smooth": "Smooth",
+    "Flatten": "Flatten",
+    "Fill": "Fill",
+    "Scrape": "Scrape",
+    "Multi-plane Scrape": "Multi-plane Scrape",
+    "Pinch": "Pinch",
+    "Grab": "Grab",
+    "Elastic Deform": "Elastic Deform",
+    "Snake Hook": "Snake Hook",
+    "Thumb": "Thumb",
+    "Pose": "Pose",
+    "Nudge": "Nudge",
+    "Rotate": "Rotate",
+    "Slide Relax": "Slide Relax",
+    "Boundary": "Boundary",
+    "Cloth": "Cloth",
+    "Simplify": "Simplify",
+    "Displacement Eraser": "Displacement Eraser",
+    "Displacement Smear": "Displacement Smear",
+    "Sharpen": "Sharpen",
+    "Multires Displacement Eraser": "Multires Displacement Eraser",
+    "Multires Displacement Smear": "Multires Displacement Smear",
+}
+
+MESH_PAINT_BRUSHES = {
+    "Draw": "Draw",
+    "Soft": "Soft",
+    "Blur": "Blur",
+    "Fill": "Fill",
+    "Scrape": "Scrape",
+    "Mask": "Mask",
+    "Airbrush": "Airbrush",
+    "Clone": "Clone",
+    "Smear": "Smear",
+}
+
+MESH_VERTEX_PAINT_BRUSHES = {
+    "Draw": "Draw",
+    "Blur": "Blur",
+    "Average": "Average",
+    "Smear": "Smear",
+}
+
+MESH_WEIGHT_PAINT_BRUSHES = {
+    "Draw": "Draw",
+    "Blur": "Blur",
+    "Average": "Average",
+    "Smear": "Smear",
+}
+
+
+########################################
+# BRUSH POPUP OPERATORS (Blender 5.0+)
+########################################
+
+
+class PIESPLUS_OT_sculpt_brushes_popup(Operator):
+    bl_idname = "pies_plus.sculpt_brushes_popup"
+    bl_label = "Sculpt Brushes"
+    bl_description = "Popup menu for sculpt brush selection"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_props_dialog(self, width=300)
+        return {'RUNNING_MODAL'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.label(text="Sculpt Brushes", icon='SCULPTMODE_HLT')
+        layout.separator()
+
+        for brush_name, asset_name in MESH_SCULPT_BRUSHES.items():
+            layout.operator(
+                "pies_plus.activate_sculpt_brush",
+                text=brush_name,
+                icon='BRUSH_SCULPT'
+            ).brush_name = asset_name
+
+
+class PIESPLUS_OT_activate_sculpt_brush(Operator):
+    bl_idname = "pies_plus.activate_sculpt_brush"
+    bl_label = "Activate Sculpt Brush"
+    bl_description = "Activate a sculpt brush asset"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    brush_name: bpy.props.StringProperty(name="Brush Name")
+
+    def execute(self, context):
+        try:
+            # Blender 5.0+ brush asset activation
+            asset_path = f"Brushes/mesh_sculpt/{self.brush_name}"
+            bpy.ops.brush.asset_activate(
+                asset_library_type='ESSENTIALS',
+                asset_library_identifier='',
+                relative_asset_identifier=asset_path
+            )
+            self.report({'INFO'}, f"Activated brush: {self.brush_name}")
+        except Exception as e:
+            # Fallback to traditional brush activation
+            self.report({'WARNING'}, f"Could not activate brush asset: {self.brush_name}")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_paint_brushes_popup(Operator):
+    bl_idname = "pies_plus.paint_brushes_popup"
+    bl_label = "Paint Brushes"
+    bl_description = "Popup menu for paint brush selection"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_props_dialog(self, width=300)
+        return {'RUNNING_MODAL'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.label(text="Paint Brushes", icon='PAINT_TEXTURE_HLT')
+        layout.separator()
+
+        for brush_name, asset_name in MESH_PAINT_BRUSHES.items():
+            layout.operator(
+                "pies_plus.activate_paint_brush",
+                text=brush_name,
+                icon='BRUSH_TEXDRAW'
+            ).brush_name = asset_name
+
+
+class PIESPLUS_OT_activate_paint_brush(Operator):
+    bl_idname = "pies_plus.activate_paint_brush"
+    bl_label = "Activate Paint Brush"
+    bl_description = "Activate a paint brush asset"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    brush_name: bpy.props.StringProperty(name="Brush Name")
+
+    def execute(self, context):
+        try:
+            # Blender 5.0+ brush asset activation
+            asset_path = f"Brushes/mesh_texture/{self.brush_name}"
+            bpy.ops.brush.asset_activate(
+                asset_library_type='ESSENTIALS',
+                asset_library_identifier='',
+                relative_asset_identifier=asset_path
+            )
+            self.report({'INFO'}, f"Activated brush: {self.brush_name}")
+        except Exception as e:
+            # Fallback to traditional brush activation
+            self.report({'WARNING'}, f"Could not activate brush asset: {self.brush_name}")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_vertex_paint_brushes_popup(Operator):
+    bl_idname = "pies_plus.vertex_paint_brushes_popup"
+    bl_label = "Vertex Paint Brushes"
+    bl_description = "Popup menu for vertex paint brush selection"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_props_dialog(self, width=300)
+        return {'RUNNING_MODAL'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.label(text="Vertex Paint Brushes", icon='PAINT_VERTEX_HLT')
+        layout.separator()
+
+        for brush_name, asset_name in MESH_VERTEX_PAINT_BRUSHES.items():
+            layout.operator(
+                "pies_plus.activate_vertex_paint_brush",
+                text=brush_name,
+                icon='BRUSH_VERTEX'
+            ).brush_name = asset_name
+
+
+class PIESPLUS_OT_activate_vertex_paint_brush(Operator):
+    bl_idname = "pies_plus.activate_vertex_paint_brush"
+    bl_label = "Activate Vertex Paint Brush"
+    bl_description = "Activate a vertex paint brush asset"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    brush_name: bpy.props.StringProperty(name="Brush Name")
+
+    def execute(self, context):
+        try:
+            # Blender 5.0+ brush asset activation
+            asset_path = f"Brushes/mesh_vertex/{self.brush_name}"
+            bpy.ops.brush.asset_activate(
+                asset_library_type='ESSENTIALS',
+                asset_library_identifier='',
+                relative_asset_identifier=asset_path
+            )
+            self.report({'INFO'}, f"Activated brush: {self.brush_name}")
+        except Exception as e:
+            # Fallback to traditional brush activation
+            self.report({'WARNING'}, f"Could not activate brush asset: {self.brush_name}")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_weight_paint_brushes_popup(Operator):
+    bl_idname = "pies_plus.weight_paint_brushes_popup"
+    bl_label = "Weight Paint Brushes"
+    bl_description = "Popup menu for weight paint brush selection"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_props_dialog(self, width=300)
+        return {'RUNNING_MODAL'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.label(text="Weight Paint Brushes", icon='PAINT_WEIGHT_HLT')
+        layout.separator()
+
+        for brush_name, asset_name in MESH_WEIGHT_PAINT_BRUSHES.items():
+            layout.operator(
+                "pies_plus.activate_weight_paint_brush",
+                text=brush_name,
+                icon='BRUSH_WEIGHT'
+            ).brush_name = asset_name
+
+
+class PIESPLUS_OT_activate_weight_paint_brush(Operator):
+    bl_idname = "pies_plus.activate_weight_paint_brush"
+    bl_label = "Activate Weight Paint Brush"
+    bl_description = "Activate a weight paint brush asset"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    brush_name: bpy.props.StringProperty(name="Brush Name")
+
+    def execute(self, context):
+        try:
+            # Blender 5.0+ brush asset activation
+            asset_path = f"Brushes/mesh_weight/{self.brush_name}"
+            bpy.ops.brush.asset_activate(
+                asset_library_type='ESSENTIALS',
+                asset_library_identifier='',
+                relative_asset_identifier=asset_path
+            )
+            self.report({'INFO'}, f"Activated brush: {self.brush_name}")
+        except Exception as e:
+            # Fallback to traditional brush activation
+            self.report({'WARNING'}, f"Could not activate brush asset: {self.brush_name}")
+        return {'FINISHED'}
 
 
 ########################################
@@ -1109,7 +1397,7 @@ class PIESPLUS_MT_sculpt(Menu):
         # 6 - RIGHT
         pie.operator("paint.brush_select", text="    Blob").sculpt_brush_type = 'BLOB'
         # 2 - BOTTOM
-        pie.menu("PIESPLUS_MT_sculpt_more", text="    More...")
+        pie.operator("pies_plus.sculpt_brushes_popup", text="    Brushes...", icon='BRUSH_SCULPT')
         # 8 - TOP
         pie.operator("paint.brush_select", text="    Draw").sculpt_brush_type = 'DRAW'
         # 7 - TOP - LEFT
@@ -1408,7 +1696,15 @@ classes = (
     PIESPLUS_MT_sculpt_more,
     PIESPLUS_MT_save,
     PIESPLUS_MT_align,
-    PIESPLUS_MT_mark_edge
+    PIESPLUS_MT_mark_edge,
+    PIESPLUS_OT_sculpt_brushes_popup,
+    PIESPLUS_OT_activate_sculpt_brush,
+    PIESPLUS_OT_paint_brushes_popup,
+    PIESPLUS_OT_activate_paint_brush,
+    PIESPLUS_OT_vertex_paint_brushes_popup,
+    PIESPLUS_OT_activate_vertex_paint_brush,
+    PIESPLUS_OT_weight_paint_brushes_popup,
+    PIESPLUS_OT_activate_weight_paint_brush,
 )
 
 

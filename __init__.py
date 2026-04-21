@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Pie Menus Plus",
     "description": "Improved Pie Menu ecosystem for Blender 5.0+",
-    "version": (2, 0, 0),
+    "version": (2, 1, 0),
     "blender": (5, 0, 0),
     "category": "3D View"
 }
@@ -25,8 +25,7 @@ module_names = (
     "pie_ops.pie_proportional",
     "pie_ops.pie_keyframing",
     "pie_ops.pie_save",
-    "pie_ops.pie_align",
-    "pie_ops.pie_edgeflow"
+    "pie_ops.pie_align"
 )
 modules = []
 for mod in module_names:

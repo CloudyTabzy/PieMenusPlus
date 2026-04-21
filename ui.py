@@ -740,6 +740,62 @@ class PIESPLUS_MT_booltool(Menu):
 
 
 ########################################
+# EDGEFLOW - SHIFT + ALT + F
+########################################
+
+
+class PIESPLUS_MT_edgeflow(Menu):
+    bl_idname = "PIESPLUS_MT_edgeflow"
+    bl_label = "EdgeFlow"
+
+    def draw(self, context):
+        layout = self.layout
+        pie = layout.menu_pie()
+
+        # Check if EdgeFlow operators exist
+        if not hasattr(bpy.ops.mesh, 'set_edge_flow'):
+            pie.label(text="          WARNING: You must have EdgeFlow addon enabled")
+            return
+
+        # Get mesh select mode to determine which operators to show
+        mesh_select_mode = context.scene.tool_settings.mesh_select_mode[:3]
+
+        if mesh_select_mode == (True, False, False):
+            # Vertex mode - only show Set Vertex Curve
+            # 8 - TOP (most prominent position for single operator)
+            pie.operator("mesh.align_vertex_curve", text="Set Vertex Curve")
+            # 2 - BOTTOM
+            pie.label(text="EdgeFlow - Vertex Mode")
+            # Others - separators to fill remaining positions
+            pie.separator()
+            pie.separator()
+            pie.separator()
+            pie.separator()
+            pie.separator()
+            pie.separator()
+        elif mesh_select_mode == (False, True, False):
+            # Edge mode - show Set Flow, Set Curve, Set Linear
+            pie.operator("mesh.set_edge_flow", text="Set Flow")
+            pie.operator("mesh.set_edge_curve", text="Set Curve")
+            pie.operator("mesh.set_edge_linear", text="Set Linear")
+            pie.separator()
+            pie.separator()
+            pie.separator()
+            pie.separator()
+            pie.separator()
+        else:
+            # Face mode or mixed - show all available operators
+            pie.operator("mesh.set_edge_flow", text="Set Flow")
+            pie.operator("mesh.set_edge_curve", text="Set Curve")
+            pie.operator("mesh.set_edge_linear", text="Set Linear")
+            pie.operator("mesh.align_vertex_curve", text="Set Vertex Curve")
+            pie.separator()
+            pie.separator()
+            pie.separator()
+            pie.separator()
+
+
+########################################
 # TRANSFORMS - CTRL + A
 ########################################
 

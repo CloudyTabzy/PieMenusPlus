@@ -119,7 +119,7 @@ class PIESPLUS_addon_keymaps:
                 row.context_pointer_set('keymap_item', km_item)
                 row.label(text="", icon='KEYBOARD')
                 row.label(text=km_item.to_string())
-                row.operator("wm.keymap_item_remove", text="", icon='X')
+                row.operator(PIESPLUS_OT_remove_hotkey.bl_idname, text="", icon='X')
                 return
 
         col.label(text=f"No hotkey entry found for {name}")
@@ -170,6 +170,20 @@ class PIESPLUS_OT_add_hotkey(Operator):
             km.restore_to_default()
             context.preferences.is_dirty = True
         context.preferences.active_section = 'ADDONS'
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_remove_hotkey(Operator):
+    bl_idname = "pies_plus.remove_hotkey"
+    bl_label = "Remove Hotkey"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        km = context.keymap
+        km_item = context.keymap_item
+        if km and km_item:
+            km.keymap_items.remove(km_item)
+            context.preferences.is_dirty = True
         return {'FINISHED'}
 
 
@@ -374,6 +388,7 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
 classes = (
     PIESPLUS_MT_addon_prefs,
     PIESPLUS_OT_add_hotkey,
+    PIESPLUS_OT_remove_hotkey,
     PIESPLUS_property_group
 )
 

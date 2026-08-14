@@ -1,6 +1,7 @@
 import bpy
 
 from ..utils import get_addon_preferences
+from ..compat import set_absolute_grid_snap, set_snap_enabled, set_snap_uv_element
 
 
 class PIESPLUS_OT_snapping(bpy.types.Operator):
@@ -40,7 +41,7 @@ class PIESPLUS_OT_snapping(bpy.types.Operator):
         elif self.snap_elements == 'increment':
             ts.snap_elements = {'INCREMENT'}
             if pies_plus.auto_enable_abs_grid_snap_pref:
-                ts.use_snap_grid_absolute = True
+                set_absolute_grid_snap(ts)
         elif self.snap_elements == 'volume':
             ts.snap_elements = {'VOLUME'}
         elif self.snap_elements == 'edge_center':
@@ -50,12 +51,16 @@ class PIESPLUS_OT_snapping(bpy.types.Operator):
 
         # UV
         elif self.snap_elements == 'uv_increment':
-            ts.snap_uv_element = {'INCREMENT'}
+            if not set_snap_uv_element(ts, 'INCREMENT'):
+                self.report({'WARNING'}, "UV snapping is unavailable in this Blender version")
+                return {'CANCELLED'}
         elif self.snap_elements == 'uv_vertex':
-            ts.snap_uv_element = {'VERTEX'}
+            if not set_snap_uv_element(ts, 'VERTEX'):
+                self.report({'WARNING'}, "UV snapping is unavailable in this Blender version")
+                return {'CANCELLED'}
 
         if pies_plus.auto_enable_snap_pref:
-            ts.use_snap = True
+            set_snap_enabled(ts, True, uv=self.snap_elements.startswith('uv_'))
         return {'FINISHED'}
 
 

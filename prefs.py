@@ -4,7 +4,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup, Operator, AddonPreferences, Scene
 
-# Blender 5.0+ note: rna_keymap_ui still exists in source, try importing it
+# Optional private UI helper; the plain keymap string remains the fallback.
 try:
     import rna_keymap_ui
 except ImportError:
@@ -118,14 +118,22 @@ class PIESPLUS_addon_keymaps:
 
     @staticmethod
     def get_hotkey_entry_item(name, kc, km, kmi_name, kmi_value, col):
+        if km is None:
+            col.label(text=f"Keymap unavailable: {name}")
+            return
+
         for km_item in km.keymap_items:
-            if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
+            item_name = getattr(km_item.properties, 'name', None)
+            if km_item.idname == kmi_name and item_name == kmi_value:
                 col.context_pointer_set('keymap', km)
                 col.context_pointer_set('keymap_item', km_item)
                 if rna_keymap_ui is not None:
-                    rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
-                else:
-                    col.label(text=km_item.to_string())
+                    try:
+                        rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
+                        return
+                    except (AttributeError, RuntimeError, TypeError, ValueError):
+                        pass
+                col.label(text=km_item.to_string())
                 return
 
         col.label(text=f"No hotkey entry found for {name}")
@@ -156,7 +164,7 @@ class PIESPLUS_addon_keymaps:
                 kmi_name, kmi_value, km_name = id[:3]
                 split = box.split()
                 col = split.column()
-                km = kc.keymaps[km_name]
+                km = kc.keymaps.get(km_name)
                 PIESPLUS_addon_keymaps.get_hotkey_entry_item(name, kc, km, kmi_name, kmi_value, col)
 
 
@@ -245,7 +253,7 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
         description="Allows for snapping directly to the center of any face on the object being edited (WARNING: This operation can be very slow in bigger scenes)"
     )
 
-    # Custom Sculpt Brushes (Blender 5.0+)
+    # Custom Sculpt Brushes (Blender 4.2+)
     custom_sculpt_brush_1: StringProperty(
         name="Brush 1 (Left)",
         description="Asset path for brush 1 (e.g., Brushes/mesh_sculpt/Draw)",
@@ -307,10 +315,10 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
         description="Move the sculpt mode button to the main array of context mode operators, so that you can quickly switch between the modes"
     )
 
-    # Debug Prefs (Blender 5.0+)
+    # Debug Prefs
     debug_context_logging: BoolProperty(
         name="Enable Context Logging",
-        description="Log context member access for debugging (Blender 5.0+ feature)",
+        description="Log context member access for debugging",
         default=False
     )
 
@@ -384,7 +392,7 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             col.separator()
             box = col.box()
             box.scale_y = .9
-            box.label(text="DEBUG (Blender 5.0+)")
+            box.label(text="DEBUG")
             col.prop(self, "debug_context_logging", text="Enable Context Logging")
 
             col = layout.column(align = True)
@@ -415,8 +423,8 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             col.separator()
             box = col.box()
             box.scale_y = .9
-            box.label(text="CUSTOM SCULPT BRUSHES (Blender 5.0+)")
-            box.label(text="Enter brush asset paths for pie menu positions")
+            box.label(text="CUSTOM SCULPT BRUSHES (Blender 4.2+)")
+            box.label(text="Enter asset paths; older builds use a brush-tool fallback")
             box.label(text="Example: Brushes/mesh_sculpt/Draw")
             col.prop(self, "custom_sculpt_brush_1")
             col.prop(self, "custom_sculpt_brush_2")

@@ -2,6 +2,7 @@ import bpy
 from bpy.types import Operator, Context, Event
 from typing import Set
 from ..utils import OpInfo
+from ..compat import set_grease_pencil_mode
 
 
 class PIESPLUS_OT_edit_mode(OpInfo, Operator):
@@ -115,6 +116,28 @@ class PIESPLUS_OT_UV_sel_change(Operator):
         return {'FINISHED'}
 
 
+class PIESPLUS_OT_grease_pencil_mode(OpInfo, Operator):
+    bl_idname = "pies_plus.grease_pencil_mode"
+    bl_label = "Grease Pencil Mode"
+    bl_description = "Change Grease Pencil mode across Blender API versions"
+
+    mode: bpy.props.EnumProperty(
+        items=(
+            ('EDIT', "Edit", ""),
+            ('SCULPT', "Sculpt", ""),
+            ('PAINT', "Draw", ""),
+            ('WEIGHT', "Weight Paint", ""),
+        ),
+        name='Mode'
+    )
+
+    def execute(self, _context: Context) -> Set[str]:
+        if not set_grease_pencil_mode(self.mode):
+            self.report({'WARNING'}, "Grease Pencil mode is unavailable in this Blender version")
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 class PIESPLUS_OT_overlays(OpInfo, Operator):
     bl_idname = "pies_plus.overlay"
     bl_label = "Overlay Toggle"
@@ -137,6 +160,7 @@ classes = (
     PIESPLUS_OT_edge,
     PIESPLUS_OT_face,
     PIESPLUS_OT_UV_sel_change,
+    PIESPLUS_OT_grease_pencil_mode,
     PIESPLUS_OT_overlays
 )
 

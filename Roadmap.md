@@ -22,10 +22,11 @@ This document outlines future improvements and development goals for Pie Menus P
 
 ## Completed
 
-- [x] Replace deprecated `paint.brush_select` operator with Blender 5.0+ brush asset API
+- [x] Prefer brush assets with a legacy `paint.brush_select` fallback for Blender 4.2+
 - [x] Implement preferences-based custom sculpt brush system
 - [x] Move custom sculpt brushes to keymaps section
 - [x] Fix LoopTools and BoolTool detection to use operator existence checks
 - [x] Remove external links and author references for clean distribution
-- [x] Fix rna_keymap_ui implementation for Blender 5.0+
+- [x] Keep keymap UI optional with a plain-string fallback
 - [x] Add EdgeFlow addon integration with context-aware pie menu (Shift+Alt+F)
+- [x] Add Blender 4.2-5.2+ API compatibility fallbacks

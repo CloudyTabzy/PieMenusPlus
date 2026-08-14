@@ -2,6 +2,7 @@ import bpy
 from bpy.types import Operator
 
 from ..utils import OpInfo, get_addon_preferences
+from ..compat import clear_custom_normals, shade_auto_smooth
 
 
 class PIESPLUS_OT_auto_smooth(Operator):
@@ -24,7 +25,7 @@ class PIESPLUS_OT_auto_smooth(Operator):
             bpy.ops.object.mode_set(mode="OBJECT")
 
         angle = context.scene.pies_plus.smoothAngle * 3.14159 / 180
-        bpy.ops.object.shade_auto_smooth(use_auto_smooth=True, angle=angle)
+        shade_auto_smooth(angle)
 
         if 'saved_mode' in locals():
             bpy.ops.object.mode_set(mode = saved_mode)
@@ -149,7 +150,7 @@ class PIESPLUS_OT_auto_fwn(OpInfo, Operator):
             saved_mode = context.object.mode
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        bpy.ops.object.shade_auto_smooth(use_auto_smooth=True, angle=3.14159)
+        shade_auto_smooth(3.14159)
 
         for ob in context.selected_objects:
             if ob.type != 'MESH':
@@ -192,7 +193,7 @@ class PIESPLUS_OT_remove_custom_normals(OpInfo, Operator):
         for ob in context.selected_objects:
             if ob.type == 'MESH':
                 context.view_layer.objects.active = ob
-                bpy.ops.mesh.customdata_custom_splitnormals_clear()
+                clear_custom_normals()
 
         if 'saved_active' in locals():
             context.view_layer.objects.active = bpy.data.objects[saved_active]

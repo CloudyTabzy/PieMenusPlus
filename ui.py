@@ -1,15 +1,15 @@
 import bpy, os, re, math
 from bpy.types import Menu, Operator
-from bl_ui.space_toolsystem_common import ToolSelectPanelHelper
 
 from .utils import get_addon_preferences
+from .compat import activate_brush, draw_snap_toggle, set_grease_pencil_mode
 
 
 ########################################
-# BRUSH ASSET MANAGEMENT (Blender 5.0+)
+# BRUSH ASSET MANAGEMENT (Blender 4.2+)
 ########################################
 
-# Brush asset paths for Blender 5.0+ Essentials library
+# Brush asset paths for Blender builds with the Essentials asset library.
 BRUSH_ASSET_PATHS = {
     "mesh_sculpt": "Brushes/mesh_sculpt/",
     "mesh_paint": "Brushes/mesh_texture/",
@@ -84,7 +84,7 @@ MESH_WEIGHT_PAINT_BRUSHES = {
 
 
 ########################################
-# BRUSH POPUP OPERATORS (Blender 5.0+)
+# BRUSH POPUP OPERATORS (Blender 4.2+ with legacy fallback)
 ########################################
 
 
@@ -96,7 +96,7 @@ class PIESPLUS_MT_sculpt_brushes(Menu):
         layout = self.layout
         layout.scale_y = 1.2
 
-        layout.label(text="Sculpt Brushes (Blender 5.0+)", icon='SCULPTMODE_HLT')
+        layout.label(text="Sculpt Brushes", icon='SCULPTMODE_HLT')
         layout.separator()
 
         for brush_name, asset_name in MESH_SCULPT_BRUSHES.items():
@@ -116,17 +116,13 @@ class PIESPLUS_OT_activate_sculpt_brush(Operator):
 
     def execute(self, context):
         try:
-            # Blender 5.0+ brush asset activation
             asset_path = f"Brushes/mesh_sculpt/{self.brush_name}"
-            bpy.ops.brush.asset_activate(
-                asset_library_type='ESSENTIALS',
-                asset_library_identifier='',
-                relative_asset_identifier=asset_path
-            )
+            if not activate_brush(asset_path, 'SCULPT', self.brush_name):
+                raise RuntimeError("No compatible sculpt brush API is available")
             self.report({'INFO'}, f"Activated brush: {self.brush_name}")
-        except Exception as e:
-            # Fallback to traditional brush activation
-            self.report({'WARNING'}, f"Could not activate brush asset: {self.brush_name}")
+        except (RuntimeError, TypeError, ValueError):
+            self.report({'WARNING'}, f"Could not activate brush: {self.brush_name}")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -144,15 +140,12 @@ class PIESPLUS_OT_activate_custom_sculpt_brush(Operator):
             return {'CANCELLED'}
 
         try:
-            # Blender 5.0+ brush asset activation
-            bpy.ops.brush.asset_activate(
-                asset_library_type='ESSENTIALS',
-                asset_library_identifier='',
-                relative_asset_identifier=self.brush_path
-            )
+            if not activate_brush(self.brush_path, 'SCULPT'):
+                raise RuntimeError("No compatible sculpt brush API is available")
             self.report({'INFO'}, f"Activated brush: {self.brush_path}")
-        except Exception as e:
+        except (RuntimeError, TypeError, ValueError):
             self.report({'WARNING'}, f"Could not activate brush: {self.brush_path}")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -193,17 +186,13 @@ class PIESPLUS_OT_activate_paint_brush(Operator):
 
     def execute(self, context):
         try:
-            # Blender 5.0+ brush asset activation
             asset_path = f"Brushes/mesh_texture/{self.brush_name}"
-            bpy.ops.brush.asset_activate(
-                asset_library_type='ESSENTIALS',
-                asset_library_identifier='',
-                relative_asset_identifier=asset_path
-            )
+            if not activate_brush(asset_path, 'TEXTURE_PAINT', self.brush_name):
+                raise RuntimeError("No compatible texture paint brush API is available")
             self.report({'INFO'}, f"Activated brush: {self.brush_name}")
-        except Exception as e:
-            # Fallback to traditional brush activation
+        except (RuntimeError, TypeError, ValueError):
             self.report({'WARNING'}, f"Could not activate brush asset: {self.brush_name}")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -244,17 +233,13 @@ class PIESPLUS_OT_activate_vertex_paint_brush(Operator):
 
     def execute(self, context):
         try:
-            # Blender 5.0+ brush asset activation
             asset_path = f"Brushes/mesh_vertex/{self.brush_name}"
-            bpy.ops.brush.asset_activate(
-                asset_library_type='ESSENTIALS',
-                asset_library_identifier='',
-                relative_asset_identifier=asset_path
-            )
+            if not activate_brush(asset_path, 'VERTEX_PAINT', self.brush_name):
+                raise RuntimeError("No compatible vertex paint brush API is available")
             self.report({'INFO'}, f"Activated brush: {self.brush_name}")
-        except Exception as e:
-            # Fallback to traditional brush activation
+        except (RuntimeError, TypeError, ValueError):
             self.report({'WARNING'}, f"Could not activate brush asset: {self.brush_name}")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -295,17 +280,13 @@ class PIESPLUS_OT_activate_weight_paint_brush(Operator):
 
     def execute(self, context):
         try:
-            # Blender 5.0+ brush asset activation
             asset_path = f"Brushes/mesh_weight/{self.brush_name}"
-            bpy.ops.brush.asset_activate(
-                asset_library_type='ESSENTIALS',
-                asset_library_identifier='',
-                relative_asset_identifier=asset_path
-            )
+            if not activate_brush(asset_path, 'WEIGHT_PAINT', self.brush_name):
+                raise RuntimeError("No compatible weight paint brush API is available")
             self.report({'INFO'}, f"Activated brush: {self.brush_name}")
-        except Exception as e:
-            # Fallback to traditional brush activation
+        except (RuntimeError, TypeError, ValueError):
             self.report({'WARNING'}, f"Could not activate brush asset: {self.brush_name}")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -417,15 +398,15 @@ class PIESPLUS_MT_modes(Menu):
 
         else:
             # 4 - LEFT
-            if ob_type == 'GPENCIL':
-                pie.operator("gpencil.sculptmode_toggle", text="Sculpt Mode", icon='SCULPTMODE_HLT')
+            if ob_type in ('GPENCIL', 'GREASEPENCIL'):
+                pie.operator("pies_plus.grease_pencil_mode", text="Sculpt Mode", icon='SCULPTMODE_HLT').mode = 'SCULPT'
             else:
                 pie.separator()
             # 6 - RIGHT
             if ob_type == 'ARMATURE':
                 pie.operator("object.posemode_toggle", text="Pose Mode", icon='POSE_HLT')
-            elif ob_type == 'GPENCIL':
-                pie.operator("gpencil.paintmode_toggle", text="Draw Mode", icon='GREASEPENCIL')
+            elif ob_type in ('GPENCIL', 'GREASEPENCIL'):
+                pie.operator("pies_plus.grease_pencil_mode", text="Draw Mode", icon='GREASEPENCIL').mode = 'PAINT'
             else:
                 pie.separator()
             # 2 - BOTTOM
@@ -438,8 +419,8 @@ class PIESPLUS_MT_modes(Menu):
                     pie.operator("object.editmode_toggle", text="Edit / Object", icon='OBJECT_DATAMODE')
             elif ob_type in ('CURVE', 'CURVES', 'FONT', 'SURFACE', 'META', 'LATTICE'):
                 pie.operator("object.editmode_toggle", text="Edit / Object", icon='OBJECT_DATAMODE')
-            elif ob_type == 'GPENCIL':
-                pie.operator("gpencil.editmode_toggle", text="Edit / Object", icon='OBJECT_DATAMODE')
+            elif ob_type in ('GPENCIL', 'GREASEPENCIL'):
+                pie.operator("pies_plus.grease_pencil_mode", text="Edit / Object", icon='OBJECT_DATAMODE').mode = 'EDIT'
             else:
                 pie.separator()
             # 7 - TOP - LEFT
@@ -455,8 +436,8 @@ class PIESPLUS_MT_modes(Menu):
             else:
                 pie.separator()
             # 1 - BOTTOM - LEFT
-            if ob_type == 'GPENCIL':
-                pie.operator("gpencil.weightmode_toggle", text="Weight Paint", icon='WPAINT_HLT')
+            if ob_type in ('GPENCIL', 'GREASEPENCIL'):
+                pie.operator("pies_plus.grease_pencil_mode", text="Weight Paint", icon='WPAINT_HLT').mode = 'WEIGHT'
             elif ob_type == 'CURVES':
                 pie.operator("curves.sculptmode_toggle", text="Sculpt Mode", icon='SCULPTMODE_HLT')
             else:
@@ -557,7 +538,7 @@ class PIESPLUS_MT_snapping(Menu):
         # 2 - BOTTOM
         pie.operator("pies_plus.snap", text="Edge", icon='SNAP_EDGE').snap_elements = 'edge'
         # 8 - TOP
-        pie.prop(context.tool_settings, "use_snap", text="Snap Toggle")
+        draw_snap_toggle(pie, context.tool_settings, text="Snap Toggle")
         # 7 - TOP - LEFT
         pie.operator("pies_plus.snap", text="Volume", icon='SNAP_VOLUME').snap_elements = 'volume'
         # 9 - TOP - RIGHT
@@ -613,7 +594,7 @@ class PIESPLUS_MT_UV_snapping(Menu):
         # 2 - BOTTOM
         pie.separator()
         # 8 - TOP
-        pie.prop(context.tool_settings, "use_snap_uv", text="Snap Toggle")
+        draw_snap_toggle(pie, context.tool_settings, uv=True, text="Snap Toggle")
         # 7 - TOP - LEFT
         pie.separator()
         # 9 - TOP - RIGHT
@@ -1493,15 +1474,15 @@ class PIESPLUS_MT_sculpt_more(Menu):
         layout = self.layout
         layout.scale_y = 1.2
 
-        layout.operator("paint.brush_select", text='    Smooth').sculpt_brush_type = 'SMOOTH'
-        layout.operator("paint.brush_select", text='    Flatten').sculpt_brush_type = 'FLATTEN'
-        layout.operator("paint.brush_select", text='    Scrape / Peaks').sculpt_brush_type = 'SCRAPE'
-        layout.operator("paint.brush_select", text='    Fill / Deepen').sculpt_brush_type = 'FILL'
-        layout.operator("paint.brush_select", text='    Clay Thumb').sculpt_brush_type = 'CLAY_THUMB'
-        layout.operator("paint.brush_select", text='    Cloth').sculpt_brush_type = 'CLOTH'
-        layout.operator("paint.brush_select", text='    Face Sets').sculpt_brush_type = 'DRAW_FACE_SETS'
-        layout.operator("paint.brush_select", text='    Layer').sculpt_brush_type = 'LAYER'
-        layout.operator("paint.brush_select", text='    Mask').sculpt_brush_type = 'MASK'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Smooth').brush_name = 'Smooth'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Flatten').brush_name = 'Flatten'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Scrape / Peaks').brush_name = 'Scrape'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Fill / Deepen').brush_name = 'Fill'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Clay Thumb').brush_name = 'Clay Thumb'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Cloth').brush_name = 'Cloth'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Face Sets').brush_name = 'Face Sets'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Layer').brush_name = 'Layer'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Mask').brush_name = 'Mask'
 
 
 class PIESPLUS_MT_sculpt_grab(Menu):
@@ -1512,14 +1493,14 @@ class PIESPLUS_MT_sculpt_grab(Menu):
         layout = self.layout
         layout.scale_y = 1.2
 
-        layout.operator("paint.brush_select", text='    Grab').sculpt_brush_type = 'GRAB'
-        layout.operator("paint.brush_select", text='    Pinch / Magnify').sculpt_brush_type = 'PINCH'
-        layout.operator("paint.brush_select", text='    Elastic Deform').sculpt_brush_type = 'ELASTIC_DEFORM'
-        layout.operator("paint.brush_select", text='    Snake Hook').sculpt_brush_type = 'SNAKE_HOOK'
-        layout.operator("paint.brush_select", text='    Thumb').sculpt_brush_type = 'THUMB'
-        layout.operator("paint.brush_select", text='    Pose').sculpt_brush_type = 'POSE'
-        layout.operator("paint.brush_select", text='    Nudge').sculpt_brush_type = 'NUDGE'
-        layout.operator("paint.brush_select", text='    Rotate').sculpt_brush_type = 'ROTATE'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Grab').brush_name = 'Grab'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Pinch / Magnify').brush_name = 'Pinch'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Elastic Deform').brush_name = 'Elastic Deform'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Snake Hook').brush_name = 'Snake Hook'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Thumb').brush_name = 'Thumb'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Pose').brush_name = 'Pose'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Nudge').brush_name = 'Nudge'
+        layout.operator("pies_plus.activate_sculpt_brush", text='    Rotate').brush_name = 'Rotate'
 
 
 ########################################

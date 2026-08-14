@@ -1,5 +1,6 @@
 import bpy, os
 from bpy.props import BoolProperty
+from ..compat import import_file, remove_uv_layers
 
 
 class PIESPLUS_OT_batch_import(bpy.types.Operator):
@@ -49,7 +50,7 @@ class PIESPLUS_OT_batch_import(bpy.types.Operator):
             if ob.type == 'MESH':
                 context.view_layer.objects.active = ob
 
-                bpy.ops.mesh.uv_texture_remove()
+                remove_uv_layers(ob.data)
 
     def new_coll(self,context):
         new_coll = bpy.data.collections.new(name = self.file_name[:-4])
@@ -64,14 +65,18 @@ class PIESPLUS_OT_batch_import(bpy.types.Operator):
             if self.file_name.upper().endswith(".FBX") and self.import_type in {'fbx', 'both'}:
                 self.new_coll(context)
 
-                bpy.ops.import_scene.fbx(filepath=file_path)
+                if not import_file(file_path, 'fbx'):
+                    self.report({'WARNING'}, f"No FBX importer is available for {file_path}")
+                    continue
 
                 self.settings_app(context)
 
             if self.file_name.upper().endswith(".OBJ") and self.import_type in {'obj', 'both'}:
                 self.new_coll(context)
 
-                bpy.ops.import_scene.obj(filepath=file_path)
+                if not import_file(file_path, 'obj'):
+                    self.report({'WARNING'}, f"No OBJ importer is available for {file_path}")
+                    continue
 
                 self.settings_app(context)
 

@@ -2,6 +2,7 @@ import bpy, bmesh
 from bpy.types import Operator
 
 from ..utils import OpInfo, get_addon_preferences
+from ..compat import select_edge_loop_or_ring
 
 
 class PIESPLUS_OT_view_selection(OpInfo, Operator):
@@ -132,9 +133,13 @@ class PIESPLUS_OT_ring_sel(OpInfo, Operator):
     bl_label = ""
 
     def invoke(self, context, event):
-        bpy.ops.mesh.select_edge_ring_multi()
+        if not select_edge_loop_or_ring(ring=True):
+            self.report({'WARNING'}, "Edge ring selection is unavailable in this Blender version")
+            return {'CANCELLED'}
         if event.shift:
-            bpy.ops.mesh.select_edge_loop_multi()
+            if not select_edge_loop_or_ring(ring=False):
+                self.report({'WARNING'}, "Edge loop selection is unavailable in this Blender version")
+                return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -147,9 +152,13 @@ class PIESPLUS_OT_loop_sel(OpInfo, Operator):
     bl_label = ""
 
     def invoke(self, context, event):
-        bpy.ops.mesh.select_edge_loop_multi()
+        if not select_edge_loop_or_ring(ring=False):
+            self.report({'WARNING'}, "Edge loop selection is unavailable in this Blender version")
+            return {'CANCELLED'}
         if event.shift:
-            bpy.ops.mesh.select_edge_ring_multi()
+            if not select_edge_loop_or_ring(ring=True):
+                self.report({'WARNING'}, "Edge ring selection is unavailable in this Blender version")
+                return {'CANCELLED'}
         return {'FINISHED'}
 
 

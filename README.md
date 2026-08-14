@@ -14,13 +14,13 @@
 &nbsp;
 
 # Introduction
-Welcome to Pie Menus Plus! This is a free and open-source add-on providing improved pie menus for Blender 5.0+.
+Welcome to Pie Menus Plus! This is a free and open-source add-on providing improved pie menus for Blender 4.2+.
 
-**Note: Version 2.1.0 and later require Blender 5.0 or higher.** For older Blender versions, please use version 1.4.2 or earlier.
+**Compatibility:** Version 2.1.0 supports Blender 4.2 through current Blender releases, including Blender 5.2+.
 
 # Recent Updates (v2.1.0)
 - **EdgeFlow Integration**: Added context-aware pie menu for EdgeFlow addon (Shift+Alt+F) with smart vertex/edge mode detection
-- **Blender 5.0+ API Compatibility**: Updated to use Blender 5.0+ APIs including brush asset management for sculpt tools
+- **Cross-version Blender API Compatibility**: Added guarded fallbacks for Blender 4.2-5.2+ snapping, selection, brush, shading, Grease Pencil, and import APIs
 - **Custom Sculpt Brushes**: Added preferences-based custom sculpt brush system allowing users to assign their own brush asset paths
 - **Improved Addon Detection**: Fixed BoolTool and LoopTools detection to use operator existence checks instead of addon registry lookups
 - **Clean Distribution**: Removed external links and author references for professional distribution

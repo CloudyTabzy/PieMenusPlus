@@ -31,30 +31,39 @@ class PIESPLUS_OT_transforms(bpy.types.Operator):
     @staticmethod
     def remap_bevel_weight():
         for ob in bpy.context.selected_objects:
+            if ob.type != 'MESH':
+                continue
+
             bm = bmesh.new()
-            bm.from_mesh(ob.data)
+            try:
+                bm.from_mesh(ob.data)
 
-            scale_factor = (abs(ob.scale.x) + abs(ob.scale.y) + abs(ob.scale.z)) / 3
-            layer = bm.edges.layers.float.get("bevel_weight_edge")
-            for edge in bm.edges:
-                edge[layer] *= scale_factor
+                scale_factor = (abs(ob.scale.x) + abs(ob.scale.y) + abs(ob.scale.z)) / 3
+                layer = bm.edges.layers.float.get("bevel_weight_edge")
+                if layer is not None:
+                    for edge in bm.edges:
+                        edge[layer] *= scale_factor
 
-            for mod in ob.modifiers:
-                # TODO: Remove hard-coded references
-                if mod.name != "1_GN Initial Mesh Setup":
-                    continue
-                mod["Socket_2"] *= scale_factor
-                mod["Socket_3"] *= scale_factor
-                mod["Socket_9"] *= scale_factor
+                for mod in ob.modifiers:
+                    # TODO: Remove hard-coded references
+                    if mod.name != "1_GN Initial Mesh Setup":
+                        continue
+                    for socket_name in ("Socket_2", "Socket_3", "Socket_9"):
+                        socket_value = mod.get(socket_name)
+                        if isinstance(socket_value, (int, float)):
+                            mod[socket_name] = socket_value * scale_factor
 
-            bm.to_mesh(ob.data)
-            bm.free()
+                bm.to_mesh(ob.data)
+            finally:
+                bm.free()
 
     def apply_transform(self, location, rotation, scale, properties):
         bpy.ops.object.transform_apply('INVOKE_DEFAULT', location=location, rotation=rotation, scale=scale, properties=properties)
 
     def execute(self, context):
-        if self.remap_weight:
+        if self.remap_weight and self.tranforms_type in {
+            'apply_scale', 'apply_rot_scale', 'apply_all'
+        }:
             self.remap_bevel_weight()
 
         if self.tranforms_type == 'apply_loc':

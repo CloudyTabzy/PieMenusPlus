@@ -7,7 +7,7 @@ Pie Menus Plus is a maintained fork of a Blender pie-menu add-on. The project sh
 ## Repository layout
 
 - `addon/` is the Blender-installable package. Keep the manifest, `__init__.py`, compatibility layer, UI, preferences, utilities, and addon subpackages here.
-- `README.md`, `Roadmap.md`, `LICENSE.md`, `ops.md`, and `pie_ops.md` are project-level documentation.
+- `README.md`, `Roadmap.md`, and `LICENSE.md` are project-level documentation.
 - `build.bat` is the Windows packaging script. It builds from `addon/` and writes the installable ZIP to `dist/`.
 - `dist/` contains generated package archives and must not be used for source files or documentation.
 - Keep future tests, diagnostics, and development-only tooling in root-level folders such as `tests/` or `tools/`; do not put them in `addon/`, because the contents of `addon/` are packaged for Blender.

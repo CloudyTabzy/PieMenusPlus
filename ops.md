@@ -1,1 +1,0 @@
-# PieMenusPlus - Regular Operators

@@ -23,7 +23,7 @@ Welcome to Pie Menus Plus! This is a free and open-source add-on providing impro
 # Project layout
 - `addon/` contains the Blender-installable add-on package and its `blender_manifest.toml`.
 - `build.bat` builds the package from `addon/` and writes the installable zip to `dist/`.
-- `README.md`, `Roadmap.md`, `ops.md`, and `pie_ops.md` are project documentation.
+- `README.md` and `Roadmap.md` are project documentation.
 
 # Building
 Run `build.bat` from Windows with Blender available on `PATH`, or set the `BLENDER_EXE` environment variable to the Blender executable before running it. The generated `dist\PieMenusPlus-2.8.0.zip` can be installed through Blender’s Extensions preferences.

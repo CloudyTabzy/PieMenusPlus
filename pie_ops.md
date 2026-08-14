@@ -1,1 +1,0 @@
-# PieMenusPlus - Pie Menu Operators

@@ -1,6 +1,9 @@
+import json
+
 import bpy
 from bpy.props import (
-    StringProperty, EnumProperty, BoolProperty, IntProperty, PointerProperty
+    StringProperty, EnumProperty, BoolProperty, IntProperty, PointerProperty,
+    CollectionProperty,
 )
 from bpy.types import PropertyGroup, Operator, AddonPreferences, Scene
 
@@ -71,6 +74,10 @@ class PIESPLUS_property_group(PropertyGroup):
 class PIESPLUS_addon_keymaps:
     _addon_keymaps = []
     _keymaps = {}
+    _event_fields = (
+        'type', 'value', 'ctrl', 'shift', 'alt', 'oskey', 'key_modifier',
+        'any', 'repeat', 'direction',
+    )
 
     @classmethod
     def new_keymap(cls, name, kmi_name, kmi_value=None, km_name='3D View',
@@ -82,27 +89,136 @@ class PIESPLUS_addon_keymaps:
                                     region_type, event_type, event_value,
                                     ctrl, shift, alt, key_modifier]})
 
+    @staticmethod
+    def _definition_event(items):
+        return {
+            'type': items[5],
+            'value': items[6],
+            'ctrl': items[7],
+            'shift': items[8],
+            'alt': items[9],
+            'key_modifier': items[10],
+            'oskey': False,
+            'any': False,
+        }
+
+    @staticmethod
+    def _item_property_name(kmi):
+        try:
+            return getattr(kmi.properties, 'name', None)
+        except (AttributeError, ReferenceError, RuntimeError):
+            return None
+
+    @staticmethod
+    def _same_item(left, right):
+        if left is right:
+            return True
+        try:
+            return left.as_pointer() == right.as_pointer()
+        except (AttributeError, ReferenceError, RuntimeError):
+            return False
+
+    @classmethod
+    def _matches_definition(cls, kmi, items):
+        if kmi is None or kmi.idname != items[0]:
+            return False
+        expected_name = items[1]
+        return expected_name is None or cls._item_property_name(kmi) == expected_name
+
+    @classmethod
+    def _event_values(cls, source):
+        if isinstance(source, dict):
+            return {
+                field: source.get(field, False if field not in {'type', 'value', 'key_modifier'} else None)
+                for field in cls._event_fields
+            }
+        return {
+            field: getattr(source, field, False if field not in {'type', 'value', 'key_modifier'} else None)
+            for field in cls._event_fields
+        }
+
+    @classmethod
+    def _same_event(cls, left, right):
+        left_values = cls._event_values(left)
+        right_values = cls._event_values(right)
+
+        if (
+            left_values['type'] != right_values['type']
+            or left_values['value'] != right_values['value']
+        ):
+            return False
+
+        # An item using Blender's "Any" modifier flag overlaps all modifier
+        # combinations for the same key and event value.
+        if left_values['any'] or right_values['any']:
+            return True
+
+        return all(
+            left_values[field] == right_values[field]
+            for field in ('ctrl', 'shift', 'alt', 'oskey', 'key_modifier')
+        )
+
+    @classmethod
+    def find_keymap_item(cls, kc, keymap_name):
+        items = cls._keymaps.get(keymap_name)
+        if not items or kc is None:
+            return None, None
+
+        km = kc.keymaps.get(items[2])
+        if km is None:
+            return None, None
+
+        for kmi in km.keymap_items:
+            if cls._matches_definition(kmi, items):
+                return km, kmi
+        return km, None
+
+    @classmethod
+    def _find_tracked_item(cls, keymap_name):
+        items = cls._keymaps.get(keymap_name)
+        if not items:
+            return None, None
+
+        for km, kmi in cls._addon_keymaps:
+            try:
+                if cls._matches_definition(kmi, items):
+                    return km, kmi
+            except (ReferenceError, RuntimeError):
+                continue
+        return None, None
+
     @classmethod
     def add_hotkey(cls, kc, keymap_name):
         items = cls._keymaps.get(keymap_name)
         if not items:
-            return
+            return None
 
         kmi_name, kmi_value, km_name, space_type, region_type = items[:5]
         event_type, event_value, ctrl, shift, alt, key_modifier = items[5:]
         km = kc.keymaps.new(name=km_name, space_type=space_type,
                             region_type=region_type)
-
-        kmi = km.keymap_items.new(kmi_name, event_type, event_value,
-                                  ctrl=ctrl, shift=shift, alt=alt,
-                                  key_modifier=key_modifier)
+        kmi = next(
+            (
+                item for item in km.keymap_items
+                if cls._matches_definition(item, items)
+            ),
+            None,
+        )
+        if kmi is None:
+            if not event_type:
+                return None
+            kmi = km.keymap_items.new(kmi_name, event_type, event_value,
+                                      ctrl=ctrl, shift=shift, alt=alt,
+                                      key_modifier=key_modifier)
 
         if kmi_value:
             kmi.properties.name = kmi_value
 
         kmi.active = True
 
-        cls._addon_keymaps.append((km, kmi))
+        if not any(cls._same_item(existing, kmi) for _km, existing in cls._addon_keymaps):
+            cls._addon_keymaps.append((km, kmi))
+        return kmi
 
     @staticmethod
     def register_keymaps():
@@ -112,89 +228,413 @@ class PIESPLUS_addon_keymaps:
         if not kc:
             return
 
+        if PIESPLUS_addon_keymaps._addon_keymaps:
+            PIESPLUS_addon_keymaps.unregister_keymaps()
+
         for keymap_name in PIESPLUS_addon_keymaps._keymaps.keys():
             PIESPLUS_addon_keymaps.add_hotkey(kc, keymap_name)
 
     @classmethod
     def unregister_keymaps(cls):
-        kmi_values = [item[1] for item in cls._keymaps.values() if item]
-
         for km, kmi in cls._addon_keymaps:
-            if hasattr(kmi.properties, 'name'):
-                if kmi_values:
-                    if kmi.properties.name in kmi_values:
-                        km.keymap_items.remove(kmi)
+            try:
+                km.keymap_items.remove(kmi)
+            except (ReferenceError, RuntimeError, ValueError):
+                pass
 
         cls._addon_keymaps.clear()
 
     @staticmethod
-    def get_hotkey_entry_item(name, kc, km, kmi_name, kmi_value, col):
+    def _item_to_string(kmi):
+        try:
+            return kmi.to_string()
+        except (AttributeError, ReferenceError, RuntimeError):
+            return "Shortcut unavailable"
+
+    @classmethod
+    def _status(cls, name, kc):
+        items = cls._keymaps.get(name)
+        km, kmi = cls.find_keymap_item(kc, name)
+        scan_km = km
+        # In background mode, and in some Blender preference views, add-on
+        # keymaps are not mirrored into the user keyconfig.  Inspect the
+        # add-on keyconfig as a safe fallback, while still treating an
+        # existing user keymap with a missing item as a real user override.
+        if kmi is None and kc is not getattr(bpy.context.window_manager.keyconfigs, 'addon', None):
+            addon_kc = getattr(bpy.context.window_manager.keyconfigs, 'addon', None)
+            addon_km, addon_kmi = cls.find_keymap_item(addon_kc, name)
+            if addon_kmi is not None:
+                km, kmi = addon_km, addon_kmi
+        if scan_km is None:
+            scan_km = km
+        if km is None:
+            state = 'missing'
+            conflicts = []
+        else:
+            source = kmi if kmi is not None else cls._definition_event(items)
+            conflicts = []
+            for candidate in scan_km.keymap_items:
+                try:
+                    if not getattr(candidate, 'active', True):
+                        continue
+                    if cls._same_item(candidate, kmi):
+                        continue
+                    if cls._matches_definition(candidate, items):
+                        continue
+                    if cls._same_event(candidate, source):
+                        conflicts.append(candidate)
+                except (ReferenceError, RuntimeError):
+                    continue
+            state = 'missing' if kmi is None else ('disabled' if not kmi.active else 'ok')
+
+        return {
+            'name': name,
+            'items': items,
+            'keymap': km,
+            'item': kmi,
+            'state': state,
+            'conflicts': conflicts,
+            'shortcut': cls._item_to_string(kmi) if kmi else cls._format_definition(items),
+        }
+
+    @staticmethod
+    def _format_definition(items):
+        if not items:
+            return "Shortcut unavailable"
+        modifiers = []
+        if items[7]:
+            modifiers.append('Ctrl')
+        if items[8]:
+            modifiers.append('Shift')
+        if items[9]:
+            modifiers.append('Alt')
+        if items[10] and items[10] != 'NONE':
+            modifiers.append(str(items[10]).title())
+        modifiers.append(str(items[5] or '?'))
+        return '+'.join(modifiers)
+
+    @classmethod
+    def get_statuses(cls, wm=None):
+        wm = wm or bpy.context.window_manager
+        kc = getattr(wm.keyconfigs, 'user', None) if wm else None
+        return [cls._status(name, kc) for name in cls._keymaps]
+
+    @classmethod
+    def get_summary(cls, wm=None):
+        statuses = cls.get_statuses(wm)
+        return {
+            'total': len(statuses),
+            'active': sum(status['state'] == 'ok' for status in statuses),
+            'missing': sum(status['state'] == 'missing' for status in statuses),
+            'disabled': sum(status['state'] == 'disabled' for status in statuses),
+            'conflicts': sum(bool(status['conflicts']) for status in statuses),
+        }
+
+    @classmethod
+    def _apply_event(cls, kmi, event):
+        for field in cls._event_fields:
+            if field not in event or event[field] is None:
+                continue
+            try:
+                setattr(kmi, field, event[field])
+            except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError):
+                pass
+
+    @classmethod
+    def _reset_item(cls, kmi, items):
+        cls._apply_event(kmi, cls._definition_event(items))
+        try:
+            kmi.active = True
+        except (AttributeError, ReferenceError, RuntimeError):
+            pass
+        if items[1]:
+            try:
+                kmi.properties.name = items[1]
+            except (AttributeError, ReferenceError, RuntimeError, TypeError):
+                pass
+
+    @classmethod
+    def restore_hotkey(cls, keymap_name, wm=None):
+        items = cls._keymaps.get(keymap_name)
+        wm = wm or bpy.context.window_manager
+        if not items or wm is None:
+            return False
+
+        addon_kc = getattr(wm.keyconfigs, 'addon', None)
+        user_kc = getattr(wm.keyconfigs, 'user', None)
+        addon_km, addon_kmi = cls._find_tracked_item(keymap_name)
+        if addon_kmi is None and addon_kc is not None:
+            addon_km, addon_kmi = cls.find_keymap_item(addon_kc, keymap_name)
+        if addon_kmi is None and addon_kc is not None:
+            addon_kmi = cls.add_hotkey(addon_kc, keymap_name)
+        if addon_kmi is not None:
+            cls._reset_item(addon_kmi, items)
+
+        _user_km, user_kmi = cls.find_keymap_item(user_kc, keymap_name)
+        if user_kmi is not None:
+            cls._reset_item(user_kmi, items)
+
+        return addon_kmi is not None or user_kmi is not None
+
+    @classmethod
+    def restore_all_hotkeys(cls, wm=None):
+        restored = 0
+        for name in cls._keymaps:
+            if cls.restore_hotkey(name, wm):
+                restored += 1
+        return restored
+
+    @classmethod
+    def capture_profile(cls, wm=None):
+        wm = wm or bpy.context.window_manager
+        user_kc = getattr(wm.keyconfigs, 'user', None) if wm else None
+        addon_kc = getattr(wm.keyconfigs, 'addon', None) if wm else None
+        entries = []
+
+        for name in cls._keymaps:
+            _km, kmi = cls.find_keymap_item(user_kc, name)
+            if kmi is None:
+                _km, kmi = cls._find_tracked_item(name)
+            if kmi is None and addon_kc is not None:
+                _km, kmi = cls.find_keymap_item(addon_kc, name)
+            if kmi is None:
+                continue
+
+            event = {
+                field: getattr(kmi, field, None)
+                for field in cls._event_fields
+            }
+            entries.append({
+                'name': name,
+                'event': event,
+                'active': bool(getattr(kmi, 'active', True)),
+            })
+
+        return {'version': 1, 'entries': entries}
+
+    @classmethod
+    def apply_profile(cls, profile, wm=None):
+        wm = wm or bpy.context.window_manager
+        user_kc = getattr(wm.keyconfigs, 'user', None) if wm else None
+        applied = 0
+        for entry in profile.get('entries', ()):
+            name = entry.get('name')
+            if name not in cls._keymaps:
+                continue
+            _km, kmi = cls.find_keymap_item(user_kc, name)
+            if kmi is None:
+                _km, kmi = cls._find_tracked_item(name)
+            if kmi is None:
+                continue
+            cls._apply_event(kmi, entry.get('event', {}))
+            try:
+                kmi.active = bool(entry.get('active', True))
+            except (AttributeError, ReferenceError, RuntimeError):
+                pass
+            applied += 1
+        return applied
+
+    @classmethod
+    def get_hotkey_entry_item(cls, name, kc, km, col):
         if km is None:
             col.label(text=f"Keymap unavailable: {name}")
+            operator = col.operator(
+                PIESPLUS_OT_add_hotkey.bl_idname,
+                text="Restore shortcut",
+                icon='ADD',
+            )
+            operator.keymap_name = name
             return
 
-        for km_item in km.keymap_items:
-            item_name = getattr(km_item.properties, 'name', None)
-            if km_item.idname == kmi_name and item_name == kmi_value:
-                col.context_pointer_set('keymap', km)
-                col.context_pointer_set('keymap_item', km_item)
-                if rna_keymap_ui is not None:
-                    try:
-                        rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
-                        return
-                    except (AttributeError, RuntimeError, TypeError, ValueError):
-                        pass
-                col.label(text=km_item.to_string())
-                return
+        status = cls._status(name, kc)
+        km_item = status['item']
+        if km_item is None:
+            col.label(text=f"No hotkey entry found for {name}", icon='ERROR')
+            operator = col.operator(
+                PIESPLUS_OT_add_hotkey.bl_idname,
+                text="Restore shortcut",
+                icon='ADD',
+            )
+            operator.keymap_name = name
+            return
 
-        col.label(text=f"No hotkey entry found for {name}")
-        col.operator(PIESPLUS_OT_add_hotkey.bl_idname, text="Restore keymap", icon='ADD').km_name = km.name
+        status_row = col.row(align=True)
+        if status['conflicts']:
+            status_row.alert = True
+            status_row.label(
+                text=f"Conflict ({len(status['conflicts'])})",
+                icon='ERROR',
+            )
+        elif status['state'] == 'disabled':
+            status_row.label(text="Disabled", icon='PAUSE')
+        else:
+            status_row.label(text="Active", icon='CHECKMARK')
+        status_row.label(text=cls._item_to_string(km_item))
+
+        col.context_pointer_set('keymap', km)
+        col.context_pointer_set('keymap_item', km_item)
+        if rna_keymap_ui is not None:
+            try:
+                rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
+            except (AttributeError, RuntimeError, TypeError, ValueError):
+                col.label(text=cls._item_to_string(km_item))
+        else:
+            col.label(text=cls._item_to_string(km_item))
+
+        operator = col.operator(
+            PIESPLUS_OT_add_hotkey.bl_idname,
+            text="Restore this shortcut",
+            icon='FILE_REFRESH',
+        )
+        operator.keymap_name = name
 
 
     @staticmethod
     def draw_keymap_items(wm, layout):
-        keymap_entries = {}
+        kc = wm.keyconfigs.user
+        addon_kc = wm.keyconfigs.addon
         for name, items in PIESPLUS_addon_keymaps._keymaps.items():
-            if items[0] != 'wm.call_menu_pie':
+            if not items or items[0] not in {'wm.call_menu', 'wm.call_menu_pie'}:
                 continue
-
-            split_name = str(name).split(' ')[0] # Convert to str for syntax
-            if split_name in keymap_entries:
-                keymap_entries[split_name].append(items[:3])
-            else:
-                keymap_entries[split_name] = [items[:3]]
-
-        for name in keymap_entries.keys():
             box = layout.box()
-            row = box.row()
-            row.label(text=f"{name} Pies")
-
-            for id in keymap_entries[name]:
-                kc = wm.keyconfigs.user  # Use user keyconfig for preferences display
-
-                kmi_name, kmi_value, km_name = id[:3]
-                split = box.split()
-                col = split.column()
-                km = kc.keymaps.get(km_name)
-                PIESPLUS_addon_keymaps.get_hotkey_entry_item(name, kc, km, kmi_name, kmi_value, col)
+            box.label(text=name, icon='KEYINGSET')
+            km, user_kmi = PIESPLUS_addon_keymaps.find_keymap_item(kc, name)
+            display_kc = kc
+            if user_kmi is None and addon_kc is not None:
+                km = addon_kc.keymaps.get(items[2])
+                display_kc = addon_kc
+            PIESPLUS_addon_keymaps.get_hotkey_entry_item(name, display_kc, km, box.column())
 
 
 class PIESPLUS_OT_add_hotkey(Operator):
     bl_idname = "pies_plus.add_hotkey"
-    bl_label = "Add Hotkeys"
+    bl_label = "Restore Shortcut"
+    bl_description = "Restore only this Pie Menus Plus shortcut without resetting the whole Blender keymap"
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    keymap_name: StringProperty()
     km_name: StringProperty()
 
     def execute(self, context):
-        context.preferences.active_section = 'KEYMAP'
-        wm = context.window_manager
-        kc = wm.keyconfigs.addon
-        km = kc.keymaps.get(self.km_name)
-        if km:
-            km.restore_to_default()
+        keymap_name = self.keymap_name or self.km_name
+        if PIESPLUS_addon_keymaps.restore_hotkey(keymap_name, context.window_manager):
             context.preferences.is_dirty = True
-        context.preferences.active_section = 'ADDONS'
+            self.report({'INFO'}, f"Restored shortcut: {keymap_name}")
+            return {'FINISHED'}
+        self.report({'WARNING'}, f"Could not restore shortcut: {keymap_name}")
+        return {'CANCELLED'}
+
+
+class PIESPLUS_OT_restore_all_hotkeys(Operator):
+    bl_idname = "pies_plus.restore_all_hotkeys"
+    bl_label = "Restore Pie Menu Shortcuts"
+    bl_description = "Restore Pie Menus Plus shortcuts without resetting unrelated Blender keymaps"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        restored = PIESPLUS_addon_keymaps.restore_all_hotkeys(context.window_manager)
+        context.preferences.is_dirty = True
+        self.report({'INFO'}, f"Restored {restored} Pie Menus Plus shortcuts")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_open_keymap_editor(Operator):
+    bl_idname = "pies_plus.open_keymap_editor"
+    bl_label = "Open Blender Keymap Editor"
+    bl_description = "Open Blender's full keymap editor for conflict resolution and advanced editing"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        context.preferences.active_section = 'KEYMAP'
+        return {'FINISHED'}
+
+
+class PIESPLUS_keymap_profile(PropertyGroup):
+    name: StringProperty(name="Profile Name")
+    data: StringProperty(name="Profile Data", maxlen=65535, options={'HIDDEN'})
+
+
+class PIESPLUS_OT_save_keymap_profile(Operator):
+    bl_idname = "pies_plus.save_keymap_profile"
+    bl_label = "Save Keymap Profile"
+    bl_description = "Save the current Pie Menus Plus shortcuts as a reusable profile"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    profile_name: StringProperty(name="Profile Name", default="My Profile")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=360)
+
+    def draw(self, _context):
+        self.layout.prop(self, 'profile_name')
+
+    def execute(self, context):
+        profile_name = self.profile_name.strip()
+        if not profile_name:
+            self.report({'WARNING'}, "Enter a profile name")
+            return {'CANCELLED'}
+
+        prefs = get_addon_preferences()
+        payload = json.dumps(
+            PIESPLUS_addon_keymaps.capture_profile(context.window_manager),
+            separators=(',', ':'),
+        )
+        profile = next(
+            (item for item in prefs.keymap_profiles if item.name == profile_name),
+            None,
+        )
+        if profile is None:
+            profile = prefs.keymap_profiles.add()
+            profile.name = profile_name
+        profile.data = payload
+        context.preferences.is_dirty = True
+        self.report({'INFO'}, f"Saved keymap profile: {profile_name}")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_load_keymap_profile(Operator):
+    bl_idname = "pies_plus.load_keymap_profile"
+    bl_label = "Load Keymap Profile"
+    bl_description = "Apply a saved Pie Menus Plus keymap profile"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    profile_index: IntProperty(min=0)
+
+    def execute(self, context):
+        prefs = get_addon_preferences()
+        if self.profile_index >= len(prefs.keymap_profiles):
+            self.report({'WARNING'}, "Keymap profile no longer exists")
+            return {'CANCELLED'}
+
+        profile = prefs.keymap_profiles[self.profile_index]
+        try:
+            payload = json.loads(profile.data)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            self.report({'WARNING'}, f"Could not read keymap profile: {profile.name}")
+            return {'CANCELLED'}
+
+        applied = PIESPLUS_addon_keymaps.apply_profile(payload, context.window_manager)
+        context.preferences.is_dirty = True
+        self.report({'INFO'}, f"Loaded {profile.name} ({applied} shortcuts)")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_delete_keymap_profile(Operator):
+    bl_idname = "pies_plus.delete_keymap_profile"
+    bl_label = "Delete Keymap Profile"
+    bl_description = "Delete a saved Pie Menus Plus keymap profile"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    profile_index: IntProperty(min=0)
+
+    def execute(self, context):
+        prefs = get_addon_preferences()
+        if self.profile_index >= len(prefs.keymap_profiles):
+            return {'CANCELLED'}
+        name = prefs.keymap_profiles[self.profile_index].name
+        prefs.keymap_profiles.remove(self.profile_index)
+        context.preferences.is_dirty = True
+        self.report({'INFO'}, f"Deleted keymap profile: {name}")
         return {'FINISHED'}
 
 
@@ -205,6 +645,8 @@ class PIESPLUS_OT_add_hotkey(Operator):
 
 class PIESPLUS_MT_addon_prefs(AddonPreferences):
     bl_idname = __package__
+
+    keymap_profiles: CollectionProperty(type=PIESPLUS_keymap_profile)
 
     tabs: EnumProperty(
         items=(
@@ -511,6 +953,82 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
         # Keymapping
         if self.tabs == 'keymaps':
             wm = context.window_manager
+
+            summary = PIESPLUS_addon_keymaps.get_summary(wm)
+            health = layout.box()
+            health.label(text="KEYMAP HEALTH", icon='KEYINGSET')
+            row = health.row(align=True)
+            row.label(text=f"{summary['active']}/{summary['total']} active", icon='CHECKMARK')
+            row.label(text=f"{summary['conflicts']} conflicts", icon='ERROR' if summary['conflicts'] else 'CHECKMARK')
+            if summary['missing']:
+                row.label(text=f"{summary['missing']} missing", icon='QUESTION')
+            if summary['disabled']:
+                row.label(text=f"{summary['disabled']} disabled", icon='PAUSE')
+
+            actions = health.row(align=True)
+            actions.operator(
+                'pies_plus.restore_all_hotkeys',
+                text="Restore Pie Shortcuts",
+                icon='FILE_REFRESH',
+            )
+            actions.operator(
+                'pies_plus.open_keymap_editor',
+                text="Open Blender Keymap Editor",
+                icon='PREFERENCES',
+            )
+
+            conflict_statuses = [
+                status for status in PIESPLUS_addon_keymaps.get_statuses(wm)
+                if status['conflicts']
+            ]
+            if conflict_statuses:
+                conflicts = health.box()
+                conflicts.label(text="Conflicts detected in the active user keymap", icon='ERROR')
+                for status in conflict_statuses:
+                    row = conflicts.row(align=True)
+                    row.alert = True
+                    row.label(text=status['name'], icon='ERROR')
+                    row.label(text=status['shortcut'])
+                    row.label(
+                        text=', '.join(
+                            getattr(item, 'idname', 'Unknown operator')
+                            for item in status['conflicts'][:3]
+                        ),
+                    )
+                conflicts.label(
+                    text="Edit the highlighted entry below or use Blender's Keymap Editor to resolve it.",
+                    icon='INFO',
+                )
+            else:
+                health.label(text="No active shortcut conflicts detected", icon='CHECKMARK')
+
+            profiles = layout.box()
+            profiles.label(text="KEYMAP PROFILES", icon='PRESET')
+            profiles.label(text="Profiles store Pie Menus Plus shortcuts only; unrelated Blender shortcuts are untouched")
+            profiles.operator(
+                'pies_plus.save_keymap_profile',
+                text="Save Current Profile",
+                icon='ADD',
+            )
+            if self.keymap_profiles:
+                for index, profile in enumerate(self.keymap_profiles):
+                    row = profiles.row(align=True)
+                    row.label(text=profile.name, icon='FILE_BLEND')
+                    load = row.operator(
+                        'pies_plus.load_keymap_profile',
+                        text="Load",
+                        icon='IMPORT',
+                    )
+                    load.profile_index = index
+                    delete = row.operator(
+                        'pies_plus.delete_keymap_profile',
+                        text="",
+                        icon='X',
+                    )
+                    delete.profile_index = index
+            else:
+                profiles.label(text="No saved profiles yet")
+
             PIESPLUS_addon_keymaps.draw_keymap_items(wm, layout)
 
             col = layout.column(align = True)
@@ -581,9 +1099,15 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
 
 classes = (
     PIESPLUS_timeline_settings,
-    PIESPLUS_MT_addon_prefs,
+    PIESPLUS_keymap_profile,
+    PIESPLUS_property_group,
     PIESPLUS_OT_add_hotkey,
-    PIESPLUS_property_group
+    PIESPLUS_OT_restore_all_hotkeys,
+    PIESPLUS_OT_open_keymap_editor,
+    PIESPLUS_OT_save_keymap_profile,
+    PIESPLUS_OT_load_keymap_profile,
+    PIESPLUS_OT_delete_keymap_profile,
+    PIESPLUS_MT_addon_prefs,
 )
 
 
@@ -689,12 +1213,13 @@ def register():
 
 
 def unregister():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)
-
-    del Scene.pies_plus
-
     PIESPLUS_addon_keymaps.unregister_keymaps()  # Keymap Cleanup
+
+    if hasattr(Scene, 'pies_plus'):
+        del Scene.pies_plus
+
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
 
 
 # ##### BEGIN GPL LICENSE BLOCK #####

@@ -4,9 +4,12 @@ This document outlines future improvements and development goals for Pie Menus P
 
 ## Keymap System Improvements
 
-- [ ] Add user-defined keymap profiles (save/load keymap configurations)
-- [ ] Implement keymap conflict detection and resolution
-- [ ] Add keyboard shortcut editor in preferences
+- [x] Add user-defined keymap profiles (save/load Pie Menus Plus configurations)
+- [x] Implement keymap conflict detection and targeted resolution
+- [x] Add keyboard shortcut editor access and per-entry restore controls
+
+> Profiles and restore actions are scoped to Pie Menus Plus entries. They do
+> not reset unrelated Blender keymaps.
 
 ## Addon Integration Robustness
 

@@ -18,7 +18,7 @@
 # Introduction
 Welcome to Pie Menus Plus! This is a free and open-source add-on providing improved pie menus for Blender 4.2+.
 
-**Compatibility:** Version 2.7.0 supports Blender 4.2 through current Blender releases, including Blender 5.2+.
+**Compatibility:** Version 2.8.0 supports Blender 4.2 through current Blender releases, including Blender 5.2+.
 
 # Project layout
 - `addon/` contains the Blender-installable add-on package and its `blender_manifest.toml`.
@@ -26,9 +26,10 @@ Welcome to Pie Menus Plus! This is a free and open-source add-on providing impro
 - `README.md`, `Roadmap.md`, `ops.md`, and `pie_ops.md` are project documentation.
 
 # Building
-Run `build.bat` from Windows with Blender available on `PATH`, or set the `BLENDER_EXE` environment variable to the Blender executable before running it. The generated `dist\PieMenusPlus-2.7.0.zip` can be installed through Blender’s Extensions preferences.
+Run `build.bat` from Windows with Blender available on `PATH`, or set the `BLENDER_EXE` environment variable to the Blender executable before running it. The generated `dist\PieMenusPlus-2.8.0.zip` can be installed through Blender’s Extensions preferences.
 
-## Recent Updates (v2.7.0)
+## Recent Updates (v2.8.0)
+- **Keymap System**: Added keymap health reporting, conflict detection, per-shortcut restore, a full Blender Keymap Editor shortcut, and scoped save/load profiles for Pie Menus Plus entries
 - **UI/UX Enhancements**: Added Native, Compact, and Focus presentation themes, label-density controls, opt-out context-aware filtering, availability cues, and a preview/editor for the sculpt pie
 - **Sculpt Pie Readability**: Shows each configured brush name in the pie and uses loaded Blender brush preview icons with a safe fallback before an asset is loaded
 - **Sculpt Brush Workflow**: Refactored the configurable sculpt brush system with eight working pie slots, per-slot Choose/Activate/Reset buttons, workflow presets, and modern Essentials asset-path translation for Blender 4.2-5.2+
@@ -68,6 +69,8 @@ Some functionality is locked behind optional add-ons you can enable within Blend
 
 # Non-intrusive default keymaps
 Pie Menus Plus overlays keymaps over the standard Blender keymap configuration, meaning uninstalling will maintain the original keymaps. This add-on does not accommodate industry standard keymaps but you can use it at the minor risk of other keymaps becoming "conflicted".
+
+The Keymaps preferences tab reports active conflicts, opens Blender’s full shortcut editor, restores individual Pie Menus Plus entries without resetting an entire keymap, and can save/load scoped shortcut profiles.
 
 # Stability
 Pie Menus Plus is fundamentally stable due to its inherent simplicity. It often does no more than convert existing operators into a digestible menu of contextually relevant functionality.

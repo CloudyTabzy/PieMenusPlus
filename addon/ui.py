@@ -7,8 +7,10 @@ from .dependencies import draw_dependency_notice
 from .sculpt_brushes import (
     CUSTOM_SCULPT_BRUSH_SLOTS,
     SCULPT_BRUSH_PRESETS,
+    SCULPT_BRUSH_NAME_ALIASES,
     custom_sculpt_brush_property,
     DEFAULT_CUSTOM_SCULPT_BRUSHES,
+    sculpt_brush_name_from_path,
 )
 
 
@@ -105,6 +107,52 @@ def _custom_sculpt_path(prefs, slot):
     return getattr(prefs, custom_sculpt_brush_property(slot), '').strip()
 
 
+def _sculpt_brush_icon_value(asset_path):
+    """Return a loaded brush preview icon, or zero for the safe fallback."""
+    friendly_name = sculpt_brush_name_from_path(asset_path)
+    brush_names = [friendly_name]
+    brush_names.extend(SCULPT_BRUSH_NAME_ALIASES.get(friendly_name, ()))
+
+    for brush_name in dict.fromkeys(brush_names):
+        brush = bpy.data.brushes.get(brush_name)
+        if brush is None:
+            continue
+        preview = getattr(brush, 'preview', None)
+        icon_id = getattr(preview, 'icon_id', 0) if preview else 0
+        if icon_id:
+            return icon_id
+        try:
+            icon_id = bpy.types.UILayout.icon(brush)
+        except (AttributeError, TypeError, ValueError):
+            icon_id = 0
+        if icon_id:
+            return icon_id
+    return 0
+
+
+def _sculpt_brush_button_kwargs(asset_path, text=None):
+    kwargs = {
+        'text': text or sculpt_brush_name_from_path(asset_path),
+    }
+    icon_value = _sculpt_brush_icon_value(asset_path)
+    if icon_value:
+        kwargs['icon_value'] = icon_value
+    else:
+        kwargs['icon'] = 'BRUSH_DATA'
+    return kwargs
+
+
+def _draw_configured_sculpt_slot(pie, prefs, slot):
+    brush_path = _custom_sculpt_path(prefs, slot)
+    operator = pie.operator(
+        'pies_plus.activate_custom_sculpt_brush_slot',
+        **_sculpt_brush_button_kwargs(brush_path)
+    )
+    operator.slot = slot
+    # Keep the path in the operator tooltip context when Blender exposes it.
+    operator.brush_path_hint = brush_path
+
+
 class PIESPLUS_MT_sculpt_brushes(Menu):
     bl_idname = "PIESPLUS_MT_sculpt_brushes"
     bl_label = "Sculpt Brushes"
@@ -119,7 +167,10 @@ class PIESPLUS_MT_sculpt_brushes(Menu):
         for brush_name, asset_name in MESH_SCULPT_BRUSHES.items():
             layout.operator(
                 "pies_plus.activate_sculpt_brush",
-                text=f"    {brush_name}"
+                **_sculpt_brush_button_kwargs(
+                    f"Brushes/mesh_sculpt/{asset_name}",
+                    f"    {brush_name}",
+                ),
             ).brush_name = asset_name
 
 
@@ -173,6 +224,19 @@ class PIESPLUS_OT_activate_custom_sculpt_brush_slot(Operator):
     bl_options = {'REGISTER'}
 
     slot: bpy.props.IntProperty(name="Slot", min=1, max=8)
+    brush_path_hint: bpy.props.StringProperty(
+        name="Configured Brush",
+        options={'HIDDEN'},
+    )
+
+    @classmethod
+    def description(cls, context, properties):
+        brush_name = sculpt_brush_name_from_path(
+            getattr(properties, 'brush_path_hint', '')
+        )
+        if brush_name == 'Unassigned':
+            return cls.bl_description
+        return f"Activate the configured {brush_name} sculpt brush"
 
     def execute(self, context):
         prefs = get_addon_preferences()
@@ -1572,24 +1636,25 @@ class PIESPLUS_MT_sculpt(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
-        layout.scale_y = 1.2
+        pie.scale_y = 1.2
+        prefs = get_addon_preferences()
 
         # 4 - LEFT
-        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 1").slot = 1
+        _draw_configured_sculpt_slot(pie, prefs, 1)
         # 6 - RIGHT
-        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 2").slot = 2
+        _draw_configured_sculpt_slot(pie, prefs, 2)
         # 2 - BOTTOM
-        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 3").slot = 3
+        _draw_configured_sculpt_slot(pie, prefs, 3)
         # 8 - TOP
-        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 4").slot = 4
+        _draw_configured_sculpt_slot(pie, prefs, 4)
         # 7 - TOP - LEFT
-        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 5").slot = 5
+        _draw_configured_sculpt_slot(pie, prefs, 5)
         # 9 - TOP - RIGHT
-        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 6").slot = 6
+        _draw_configured_sculpt_slot(pie, prefs, 6)
         # 1 - BOTTOM - LEFT
-        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 7").slot = 7
+        _draw_configured_sculpt_slot(pie, prefs, 7)
         # 3 - BOTTOM - RIGHT
-        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 8").slot = 8
+        _draw_configured_sculpt_slot(pie, prefs, 8)
 
 
 class PIESPLUS_MT_sculpt_more(Menu):

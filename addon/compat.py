@@ -10,6 +10,8 @@ from typing import Any, Optional
 
 import bpy
 
+from .sculpt_brushes import SCULPT_BRUSH_NAME_ALIASES
+
 
 log = logging.getLogger(__name__)
 
@@ -155,38 +157,6 @@ _LEGACY_BRUSH_TOOLS = {
 }
 
 
-_ESSENTIALS_BRUSH_ALIASES = {
-    'Inflate': ('Inflate/Deflate', 'Inflate'),
-    'Crease': ('Crease Sharp', 'Crease Polish', 'Crease'),
-    'Flatten': ('Flatten/Contrast', 'Flatten'),
-    'Fill': ('Fill/Deepen', 'Fill'),
-    'Scrape': ('Scrape/Fill', 'Scrape'),
-    'Multi-plane Scrape': ('Scrape Multiplane', 'Multi-plane Scrape'),
-    'Face Sets': ('Face Set Paint', 'Face Sets'),
-    'Elastic Deform': ('Elastic Grab', 'Elastic Snake Hook', 'Elastic Deform'),
-    'Pinch': ('Pinch/Magnify', 'Pinch'),
-    'Slide Relax': ('Relax Slide', 'Slide Relax'),
-    'Displacement Eraser': (
-        'Erase Multires Displacement',
-        'Displacement Eraser',
-    ),
-    'Displacement Smear': (
-        'Smear Multires Displacement',
-        'Displacement Smear',
-    ),
-    'Multires Displacement Eraser': (
-        'Erase Multires Displacement',
-        'Multires Displacement Eraser',
-    ),
-    'Multires Displacement Smear': (
-        'Smear Multires Displacement',
-        'Multires Displacement Smear',
-    ),
-    'Rotate': ('Twist', 'Rotate'),
-    'Cloth': ('Grab Cloth', 'Cloth'),
-}
-
-
 _ESSENTIALS_BRUSH_CATEGORIES = {
     'mesh_sculpt': 'SCULPT',
     'mesh_texture': 'TEXTURE_PAINT',
@@ -221,7 +191,7 @@ def _asset_path_candidates(asset_path: str, brush_name: Optional[str]):
     if category_key:
         name = _brush_name(normalized, brush_name)
         names = (
-            _ESSENTIALS_BRUSH_ALIASES.get(name, (name,))
+            SCULPT_BRUSH_NAME_ALIASES.get(name, (name,))
             if category_key == 'mesh_sculpt'
             else (name,)
         )

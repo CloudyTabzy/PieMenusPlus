@@ -25,6 +25,7 @@ This document outlines future improvements and development goals for Pie Menus P
 - [x] Integrate configurable timeline scrubbing with keyframe snapping and rolling mode
 - [x] Add optional Smart Scrub with context-aware targets and proximity snapping
 - [x] Refactor configurable sculpt brushes with presets, slot controls, and asset-path fallbacks
+- [x] Show configured sculpt brush names and preview icons in the sculpt pie
 
 ## Completed
 

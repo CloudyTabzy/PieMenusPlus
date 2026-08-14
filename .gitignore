@@ -5,3 +5,4 @@ __pycache__/
 piemenusplusgit_updater/PieMenusPlusGit_updater_status.json
 
 *.zip
+dist/

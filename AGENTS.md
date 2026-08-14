@@ -8,7 +8,8 @@ Pie Menus Plus is a maintained fork of a Blender pie-menu add-on. The project sh
 
 - `addon/` is the Blender-installable package. Keep the manifest, `__init__.py`, compatibility layer, UI, preferences, utilities, and addon subpackages here.
 - `README.md`, `Roadmap.md`, `LICENSE.md`, `ops.md`, and `pie_ops.md` are project-level documentation.
-- `build.bat` is the Windows packaging script. It builds from `addon/` and writes the installable ZIP to the project root.
+- `build.bat` is the Windows packaging script. It builds from `addon/` and writes the installable ZIP to `dist/`.
+- `dist/` contains generated package archives and must not be used for source files or documentation.
 - Keep future tests, diagnostics, and development-only tooling in root-level folders such as `tests/` or `tools/`; do not put them in `addon/`, because the contents of `addon/` are packaged for Blender.
 
 ## Versioning
@@ -30,7 +31,9 @@ Use Semantic Versioning (`MAJOR.MINOR.PATCH`) for the addon version.
 5. Run the relevant validation listed below.
 6. Git-commit every completed implementation before handing it back. Use a focused commit with a clear message, for example `feat(addon): add ...`, `fix(addon): ...`, `refactor(repo): ...`, or `docs: ...`. Do not leave a completed implementation only in the working tree.
 
-Do not commit generated ZIPs, `__pycache__/` files, local Blender configuration, or unrelated user changes.
+Do not commit generated ZIPs from `dist/`, `__pycache__/` files, local Blender configuration, or unrelated user changes.
+
+All generated ZIP files must be written under `dist/`; do not create package archives in the project root.
 
 ## Validation
 
@@ -45,8 +48,9 @@ When Blender is available, also validate the package and exercise registration i
 
 ```powershell
 & $blender --background --command extension validate addon
-& $blender --background --command extension build --source-dir addon --output-dir .
-& $blender --background --command extension validate .\PieMenusPlus-<version>.zip
+New-Item -ItemType Directory -Force dist | Out-Null
+& $blender --background --command extension build --source-dir addon --output-dir dist
+& $blender --background --command extension validate .\dist\PieMenusPlus-<version>.zip
 ```
 
 The headless test should import the package as `addon`, call `addon.register()`, verify important operators or compatibility helpers, and call `addon.unregister()` in a `finally` block. Keep that test isolated from the user’s Blender configuration.

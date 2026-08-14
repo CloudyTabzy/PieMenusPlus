@@ -11,7 +11,9 @@ if not defined BLENDER_EXE (
     set "BLENDER_EXE=blender"
 )
 
-"%BLENDER_EXE%" --background --command extension build --source-dir "%~dp0addon" --output-dir "%~dp0"
+if not exist "%~dp0dist\" mkdir "%~dp0dist"
+
+"%BLENDER_EXE%" --background --command extension build --source-dir "%~dp0addon" --output-dir "%~dp0dist"
 if errorlevel 1 exit /b %errorlevel%
 
-explorer "%~dp0"
+explorer "%~dp0dist"

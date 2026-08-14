@@ -10,9 +10,9 @@ This document outlines future improvements and development goals for Pie Menus P
 
 ## Addon Integration Robustness
 
-- [ ] Add dynamic addon detection (scan for installed addons and adapt UI)
-- [ ] Create fallback UI when integrated addons aren't available
-- [ ] Add optional dependency checks at startup
+- [x] Add dynamic addon detection (scan for installed addons and adapt UI)
+- [x] Create fallback UI when integrated addons aren't available
+- [x] Add optional dependency checks at startup
 
 ## UI/UX Enhancements
 
@@ -30,3 +30,4 @@ This document outlines future improvements and development goals for Pie Menus P
 - [x] Keep keymap UI optional with a plain-string fallback
 - [x] Add EdgeFlow addon integration with context-aware pie menu (Shift+Alt+F)
 - [x] Add Blender 4.2-5.2+ API compatibility fallbacks
+- [x] Add dynamic optional dependency detection and integration status UI

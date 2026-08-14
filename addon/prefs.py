@@ -11,6 +11,7 @@ except ImportError:
     rna_keymap_ui = None
 
 from .utils import get_addon_preferences
+from .dependencies import dependency_statuses
 
 
 ##################################
@@ -356,6 +357,24 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             col.prop(self, "preserve_uv_selection_pref", text="Select Entire Mesh in 3D View when Exiting UV Sync Mode")
             col.prop(self, "simple_context_mode_pref", text="Use Simple Select Mode Pie")
             col.prop(self, "sculptors_haven_pref", text="Add Sculpt Mode Button to Main Selection")
+
+            col = layout.column(align=True)
+            col.separator()
+            box = col.box()
+            box.scale_y = .9
+            box.label(text="OPTIONAL ADD-ONS")
+            box.label(text="Status is detected dynamically from Blender's current operators")
+            for status in dependency_statuses():
+                row = box.row(align=True)
+                row.alert = not status.available
+                row.label(
+                    text=status.spec.label,
+                    icon='CHECKMARK' if status.available else 'ERROR',
+                )
+                row.label(text=status.state_label)
+                if not status.available:
+                    detail = box.row()
+                    detail.label(text=status.message)
 
             col = layout.column(align = True)
             col.separator()

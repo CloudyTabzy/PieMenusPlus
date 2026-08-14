@@ -2,13 +2,15 @@ bl_info = {
     "name": "Pie Menus Plus",
     "description": "Improved Pie Menu ecosystem for Blender 4.2+",
     "author": "Tabzy",
-    "version": (2, 1, 0),
+    "version": (2, 2, 0),
     "blender": (4, 2, 0),
     "category": "3D View",
 }
 
 
 import importlib
+
+from .dependencies import check_optional_dependencies
 
 
 module_names = (
@@ -39,6 +41,7 @@ for mod in module_names:
 def register():
     for mod in modules:
         mod.register()
+    check_optional_dependencies()
 
 def unregister():
     for mod in modules:

@@ -3,6 +3,7 @@ from bpy.types import Menu, Operator
 
 from .utils import get_addon_preferences
 from .compat import activate_brush, draw_snap_toggle, set_grease_pencil_mode
+from .dependencies import draw_dependency_notice
 
 
 ########################################
@@ -638,9 +639,7 @@ class PIESPLUS_MT_looptools(Menu):
         layout = self.layout
         pie = layout.menu_pie()
 
-        # Check if LoopTools operators exist
-        if not hasattr(bpy.ops.mesh, 'looptools_relax'):
-            pie.label(text="          WARNING: You must have LoopTools enabled")
+        if not draw_dependency_notice(pie, "looptools"):
             return
 
         # 4 - LEFT
@@ -680,9 +679,7 @@ class PIESPLUS_MT_booltool(Menu):
         if not context.active_object:
             pie.label(text="          WARNING: You must have an Active Object selected")
             return
-        # Check if BoolTool operators exist
-        if not hasattr(bpy.ops.object, 'boolean_auto_slice'):
-            pie.label(text="          WARNING: You must have Bool Tool enabled")
+        if not draw_dependency_notice(pie, "booltool"):
             return
 
         boolean_auto_slice       = "object.boolean_auto_slice"
@@ -733,9 +730,7 @@ class PIESPLUS_MT_edgeflow(Menu):
         layout = self.layout
         pie = layout.menu_pie()
 
-        # Check if EdgeFlow operators exist
-        if not hasattr(bpy.ops.mesh, 'set_edge_flow'):
-            pie.label(text="          WARNING: You must have EdgeFlow addon enabled")
+        if not draw_dependency_notice(pie, "edgeflow"):
             return
 
         # Get mesh select mode to determine which operators to show

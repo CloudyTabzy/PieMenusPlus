@@ -21,6 +21,7 @@ from .sculpt_brushes import (
     DEFAULT_CUSTOM_SCULPT_BRUSHES,
     custom_sculpt_brush_property,
 )
+from .ui_ux import PIE_LABEL_MODE_ITEMS, PIE_THEME_ITEMS
 
 
 ##################################
@@ -307,6 +308,46 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
 
     timeline_scrub: PointerProperty(type=PIESPLUS_timeline_settings)
 
+    # UI / UX preferences
+    pie_theme: EnumProperty(
+        name="Pie Menu Theme",
+        items=PIE_THEME_ITEMS,
+        default="NATIVE",
+        description=(
+            "Tune pie menu spacing, label presentation, and status emphasis; "
+            "Blender controls the native pie background colors"
+        ),
+    )
+    pie_label_mode: EnumProperty(
+        name="Label Mode",
+        items=PIE_LABEL_MODE_ITEMS,
+        default="FULL",
+    )
+    context_filtering: BoolProperty(
+        name="Context-aware Menu Filtering",
+        default=True,
+        description=(
+            "Hide pie menus and configurable entries that cannot be useful "
+            "in the current mode, selection, or editor"
+        ),
+    )
+    show_unavailable_actions: BoolProperty(
+        name="Explain Unavailable Actions",
+        default=False,
+        description=(
+            "Show disabled explanations in place of actions that are empty or "
+            "not available in the current context"
+        ),
+    )
+    show_sculpt_brush_previews: BoolProperty(
+        name="Show Sculpt Brush Thumbnails",
+        default=True,
+        description=(
+            "Use loaded Blender brush preview thumbnails in the sculpt pie "
+            "when available"
+        ),
+    )
+
     # Selection Prefs
     invert_selection_pref: BoolProperty(
         description="Only deselect all objects if all object are selected (versus deselecting if any selection is made)"
@@ -417,6 +458,29 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             box.label(text="SNAPPING")
             col.prop(self, "auto_enable_snap_pref", text="Enable Snapping when Changing Snap Pie Settings")
             col.prop(self, "auto_enable_abs_grid_snap_pref", text="Enable Absolute Grid Snap when Turning on Incremental Snapping")
+
+            col = layout.column(align=True)
+            col.separator()
+            box = col.box()
+            box.scale_y = .9
+            box.label(text="UI / UX", icon='PREFERENCES')
+            box.label(text="Presentation, context filtering, and sculpt-pie readability")
+
+            row = box.row(align=True)
+            row.prop(self, "pie_theme", text="Theme")
+            row.prop(self, "pie_label_mode", text="Labels")
+            box.prop(self, "context_filtering")
+            box.prop(self, "show_unavailable_actions")
+            box.prop(self, "show_sculpt_brush_previews")
+            box.label(
+                text="Native Blender pie background colors remain unchanged",
+                icon='INFO',
+            )
+            box.operator(
+                'pies_plus.show_ui_ux_preview',
+                text="Preview & Edit Sculpt Pie",
+                icon='VIEWZOOM',
+            )
 
             col = layout.column(align = True)
             col.separator()

@@ -12,6 +12,17 @@ from .sculpt_brushes import (
     DEFAULT_CUSTOM_SCULPT_BRUSHES,
     sculpt_brush_name_from_path,
 )
+from .ui_ux import (
+    blender_version_label,
+    configure_pie_layout,
+    context_allows_menu,
+    context_filtering_enabled,
+    context_summary,
+    draw_unavailable,
+    format_pie_label,
+    show_sculpt_brush_previews,
+    show_unavailable_actions,
+)
 
 
 ########################################
@@ -130,11 +141,14 @@ def _sculpt_brush_icon_value(asset_path):
     return 0
 
 
-def _sculpt_brush_button_kwargs(asset_path, text=None):
+def _sculpt_brush_button_kwargs(asset_path, text=None, slot=None):
     kwargs = {
-        'text': text or sculpt_brush_name_from_path(asset_path),
+        'text': format_pie_label(
+            text or sculpt_brush_name_from_path(asset_path),
+            slot=slot,
+        ),
     }
-    icon_value = _sculpt_brush_icon_value(asset_path)
+    icon_value = _sculpt_brush_icon_value(asset_path) if show_sculpt_brush_previews() else 0
     if icon_value:
         kwargs['icon_value'] = icon_value
     else:
@@ -144,9 +158,16 @@ def _sculpt_brush_button_kwargs(asset_path, text=None):
 
 def _draw_configured_sculpt_slot(pie, prefs, slot):
     brush_path = _custom_sculpt_path(prefs, slot)
+    if not brush_path:
+        if context_filtering_enabled():
+            draw_unavailable(pie, f"Slot {slot}: Unassigned")
+            if not show_unavailable_actions():
+                pie.separator()
+            return
+
     operator = pie.operator(
         'pies_plus.activate_custom_sculpt_brush_slot',
-        **_sculpt_brush_button_kwargs(brush_path)
+        **_sculpt_brush_button_kwargs(brush_path, slot=slot)
     )
     operator.slot = slot
     # Keep the path in the operator tooltip context when Blender exposes it.
@@ -321,6 +342,118 @@ class PIESPLUS_OT_reset_custom_sculpt_brushes(Operator):
                 DEFAULT_CUSTOM_SCULPT_BRUSHES[slot],
             )
         self.report({'INFO'}, "Reset all sculpt brush slots")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_show_ui_ux_preview(Operator):
+    bl_idname = "pies_plus.show_ui_ux_preview"
+    bl_label = "Pie Menu Preview & Diagnostics"
+    bl_description = (
+        "Preview the sculpt pie presentation, edit its slots, and inspect "
+        "the active UI/UX settings"
+    )
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=680)
+
+    def draw(self, context):
+        layout = self.layout
+        prefs = get_addon_preferences()
+
+        presentation = layout.box()
+        presentation.label(text="Pie Menu Presentation", icon='PREFERENCES')
+        row = presentation.row(align=True)
+        row.prop(prefs, "pie_theme", text="Theme")
+        row.prop(prefs, "pie_label_mode", text="Labels")
+        presentation.prop(prefs, "context_filtering")
+        presentation.prop(prefs, "show_unavailable_actions")
+        presentation.prop(prefs, "show_sculpt_brush_previews")
+        presentation.label(
+            text=f"Blender {blender_version_label()}  |  {context_summary(context)}",
+            icon='INFO',
+        )
+        presentation.label(
+            text="Blender controls the native pie background; these settings tune its contents.",
+        )
+
+        keymaps = layout.box()
+        keymaps.label(text="Configured Pie Shortcuts", icon='KEYINGSET')
+        keymaps.label(text="Defaults shown here; user keymap overrides remain in Blender's Keymap preferences")
+        try:
+            from .prefs import PIESPLUS_addon_keymaps
+        except (ImportError, AttributeError):
+            PIESPLUS_addon_keymaps = None
+
+        if PIESPLUS_addon_keymaps is None:
+            keymaps.label(text="Keymap information is unavailable", icon='ERROR')
+        else:
+            for name, items in PIESPLUS_addon_keymaps._keymaps.items():
+                if not items or items[0] != 'wm.call_menu_pie':
+                    continue
+                _kmi_name, _kmi_value, km_name = items[:3]
+                event_type = items[5] or "?"
+                modifiers = []
+                if items[7]:
+                    modifiers.append("Ctrl")
+                if items[8]:
+                    modifiers.append("Shift")
+                if items[9]:
+                    modifiers.append("Alt")
+                if items[10] and items[10] != "NONE":
+                    modifiers.append(items[10].title())
+                shortcut = "+".join((*modifiers, event_type))
+                row = keymaps.row(align=True)
+                row.label(text=name)
+                row.label(text=f"{shortcut}  ·  {km_name}")
+
+        layout.separator()
+        brushes = layout.box()
+        brushes.label(text="Sculpt Tools Preview & Editor", icon='SCULPTMODE_HLT')
+        brushes.label(text="This is the same order used by the Sculpt Tools (W) pie")
+
+        for slot, direction, _brush_name in CUSTOM_SCULPT_BRUSH_SLOTS:
+            brush_path = _custom_sculpt_path(prefs, slot)
+            friendly_name = sculpt_brush_name_from_path(brush_path)
+            row = brushes.row(align=True)
+            icon_value = _sculpt_brush_icon_value(brush_path)
+            if icon_value and show_sculpt_brush_previews():
+                row.label(text="", icon_value=icon_value)
+            else:
+                row.label(text="", icon='BRUSH_DATA')
+            row.label(text=f"{slot}. {direction}")
+            row.prop(prefs, custom_sculpt_brush_property(slot), text=friendly_name)
+            status = row.row(align=True)
+            status.alert = not bool(brush_path)
+            status.label(
+                text="Ready" if brush_path else "Unassigned",
+                icon='CHECKMARK' if brush_path else 'ERROR',
+            )
+
+            choose = row.operator(
+                'pies_plus.choose_custom_sculpt_brush',
+                text="Choose",
+            )
+            choose.slot = slot
+            reset = row.operator(
+                'pies_plus.reset_custom_sculpt_brush_slot',
+                text="",
+                icon='X',
+            )
+            reset.slot = slot
+
+        footer = brushes.row(align=True)
+        footer.label(
+            text="A loaded Blender preview is used automatically when available.",
+            icon='INFO',
+        )
+        footer.operator(
+            'pies_plus.reset_custom_sculpt_brushes',
+            text="Reset All",
+            icon='FILE_REFRESH',
+        )
+
+    def execute(self, _context):
         return {'FINISHED'}
 
 
@@ -500,6 +633,7 @@ class PIESPLUS_MT_modes(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         # Get Active type if one exists
         if context.object:
@@ -651,6 +785,7 @@ class PIESPLUS_MT_UV_modes(Menu):
 
     def draw(self, context):
         pie = self.layout.menu_pie()
+        configure_pie_layout(pie)
 
         # 4 - LEFT
         pie.operator("pies_plus.vertex", icon='VERTEXSEL')
@@ -676,44 +811,49 @@ class PIESPLUS_MT_active_tools(Menu):
     bl_idname = "PIESPLUS_MT_active_tools"
     bl_label = "Active Tools"
 
+    @classmethod
+    def poll(cls, context):
+        return context_allows_menu(context, area_types={'VIEW_3D'})
+
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         pies_plus_prefs = get_addon_preferences()
 
         #4 - LEFT
-        pie.operator("wm.tool_set_by_id", text="Move", icon='ORIENTATION_GLOBAL').name = 'builtin.move'
+        pie.operator("wm.tool_set_by_id", text=format_pie_label("Move"), icon='ORIENTATION_GLOBAL').name = 'builtin.move'
         #6 - RIGHT
-        pie.operator("wm.tool_set_by_id", text="Rotate", icon='DRIVER_ROTATIONAL_DIFFERENCE').name = 'builtin.rotate'
+        pie.operator("wm.tool_set_by_id", text=format_pie_label("Rotate"), icon='DRIVER_ROTATIONAL_DIFFERENCE').name = 'builtin.rotate'
         #2 - BOTTOM
-        pie.operator("wm.tool_set_by_id", text="Scale", icon='SNAP_FACE').name = 'builtin.scale'
+        pie.operator("wm.tool_set_by_id", text=format_pie_label("Scale"), icon='SNAP_FACE').name = 'builtin.scale'
         #8 - TOP
         if pies_plus_prefs.default_tool_pref == 'builtin.select':
-            pie.operator("wm.tool_set_by_id", text="Tweak", icon='RESTRICT_SELECT_OFF').name = 'builtin.select'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Tweak"), icon='RESTRICT_SELECT_OFF').name = 'builtin.select'
         elif pies_plus_prefs.default_tool_pref == 'builtin.select_box':
-            pie.operator("wm.tool_set_by_id", text="Box", icon='SELECT_SET').name = 'builtin.select_box'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Box"), icon='SELECT_SET').name = 'builtin.select_box'
         elif pies_plus_prefs.default_tool_pref == 'builtin.select_circle':
-            pie.operator("wm.tool_set_by_id", text="Circle", icon='MESH_CIRCLE').name = 'builtin.select_circle'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Circle"), icon='MESH_CIRCLE').name = 'builtin.select_circle'
         elif pies_plus_prefs.default_tool_pref == 'builtin.select_lasso':
-            pie.operator("wm.tool_set_by_id", text="Lasso", icon='GP_ONLY_SELECTED').name = 'builtin.select_lasso'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Lasso"), icon='GP_ONLY_SELECTED').name = 'builtin.select_lasso'
         #7 - TOP - LEFT
-        pie.operator("wm.tool_set_by_id", text="All", icon='GIZMO').name = 'builtin.transform'
+        pie.operator("wm.tool_set_by_id", text=format_pie_label("All"), icon='GIZMO').name = 'builtin.transform'
         #9 - TOP - RIGHT
         if pies_plus_prefs.default_tool_pref == 'builtin.select_box':
-            pie.operator("wm.tool_set_by_id", text="Tweak", icon='RESTRICT_SELECT_OFF').name = 'builtin.select'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Tweak"), icon='RESTRICT_SELECT_OFF').name = 'builtin.select'
         else:
-            pie.operator("wm.tool_set_by_id", text="Box", icon='SELECT_SET').name = 'builtin.select_box'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Box"), icon='SELECT_SET').name = 'builtin.select_box'
         # 1 - BOTTOM - LEFT
         if pies_plus_prefs.default_tool_pref == 'builtin.select_circle':
-            pie.operator("wm.tool_set_by_id", text="Tweak", icon='RESTRICT_SELECT_OFF').name = 'builtin.select'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Tweak"), icon='RESTRICT_SELECT_OFF').name = 'builtin.select'
         else:
-            pie.operator("wm.tool_set_by_id", text="Circle", icon='MESH_CIRCLE').name = 'builtin.select_circle'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Circle"), icon='MESH_CIRCLE').name = 'builtin.select_circle'
         # 3 - BOTTOM - RIGHT
         if pies_plus_prefs.default_tool_pref == 'builtin.select_lasso':
-            pie.operator("wm.tool_set_by_id", text="Tweak", icon='RESTRICT_SELECT_OFF').name = 'builtin.select'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Tweak"), icon='RESTRICT_SELECT_OFF').name = 'builtin.select'
         else:
-            pie.operator("wm.tool_set_by_id", text="Lasso", icon='GP_ONLY_SELECTED').name = 'builtin.select_lasso'
+            pie.operator("wm.tool_set_by_id", text=format_pie_label("Lasso"), icon='GP_ONLY_SELECTED').name = 'builtin.select_lasso'
 
 
 ########################################
@@ -728,6 +868,7 @@ class PIESPLUS_MT_snapping(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         # 4 - LEFT
         pie.operator("pies_plus.snap", text="Vertex", icon='SNAP_VERTEX').snap_elements = 'vertex'
@@ -784,6 +925,7 @@ class PIESPLUS_MT_UV_snapping(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         # 4 - LEFT
         pie.operator("pies_plus.snap", text="Vertex", icon='SNAP_VERTEX').snap_elements = 'uv_vertex'
@@ -835,6 +977,7 @@ class PIESPLUS_MT_looptools(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         if not draw_dependency_notice(pie, "looptools"):
             return
@@ -869,6 +1012,7 @@ class PIESPLUS_MT_booltool(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         if len(context.selected_objects) < 2:
             pie.label(text="          WARNING: You must have at least 2 objects selected")
@@ -926,6 +1070,7 @@ class PIESPLUS_MT_edgeflow(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         if not draw_dependency_notice(pie, "edgeflow"):
             return
@@ -977,9 +1122,14 @@ class PIESPLUS_MT_transforms(Menu):
     bl_idname = "PIESPLUS_MT_transforms"
     bl_label = "Transforms & Relations"
 
+    @classmethod
+    def poll(cls, context):
+        return context_allows_menu(context, require_selection=True)
+
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         if context.selected_objects:
             #4 - LEFT
@@ -1064,6 +1214,7 @@ class PIESPLUS_MT_origin_pivot(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         if context.object:
             # 4 - LEFT
@@ -1153,11 +1304,17 @@ class PIESPLUS_MT_delete(Menu):
 
     @classmethod
     def poll(cls, context):
-        return context.object is not None and context.object.mode == 'EDIT'
+        return context_allows_menu(
+            context,
+            modes={'EDIT_MESH'},
+            object_types={'MESH'},
+            require_object=True,
+        )
 
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         #4 - LEFT
         pie.operator("mesh.delete", text="Delete Vertices", icon='VERTEXSEL').type = 'VERT'
@@ -1203,9 +1360,19 @@ class PIESPLUS_MT_delete_curve(Menu):
     bl_idname = "PIESPLUS_MT_delete_curve"
     bl_label = "Delete (Curve)"
 
+    @classmethod
+    def poll(cls, context):
+        return context_allows_menu(
+            context,
+            modes={'EDIT_CURVE'},
+            object_types={'CURVE'},
+            require_object=True,
+        )
+
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         #4 - LEFT
         pie.operator("curve.delete", text="Delete Vertices").type = 'VERT'
@@ -1227,6 +1394,7 @@ class PIESPLUS_MT_selection_object_mode(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         pies_plus_prefs = get_addon_preferences()
 
@@ -1268,6 +1436,7 @@ class PIESPLUS_MT_selection_edit_mode(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         #4 - LEFT
         pie.operator("mesh.faces_select_linked_flat",
@@ -1316,9 +1485,14 @@ class PIESPLUS_MT_shading(Menu):
     bl_idname = "PIESPLUS_MT_shading"
     bl_label = "Shading & Overlays"
 
+    @classmethod
+    def poll(cls, context):
+        return context_allows_menu(context, area_types={'VIEW_3D'})
+
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         space = context.space_data
         # 4 - LEFT
@@ -1395,6 +1569,7 @@ class PIESPLUS_MT_animation(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         # 4 - LEFT
         pie.operator("screen.frame_jump", text="Jump REW", icon='REW').end = False
@@ -1426,9 +1601,17 @@ class PIESPLUS_MT_keyframing(Menu):
     bl_idname = "PIESPLUS_MT_keyframing"
     bl_label = "Keyframing"
 
+    @classmethod
+    def poll(cls, context):
+        return context_allows_menu(
+            context,
+            require_object=not getattr(context, "selected_objects", ()),
+        )
+
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         if not context.selected_objects:
             if context.object:
@@ -1557,6 +1740,7 @@ class PIESPLUS_MT_proportional_edit_mode(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         ts = context.tool_settings
 
@@ -1596,6 +1780,7 @@ class PIESPLUS_MT_proportional_object_mode(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         # 4 - LEFT
         pie.operator("pies_plus.change_proportional_falloff", text='Smooth', icon='SMOOTHCURVE').falloff_type = 'SMOOTH'
@@ -1633,10 +1818,19 @@ class PIESPLUS_MT_sculpt(Menu):
     bl_idname = "PIESPLUS_MT_sculpt"
     bl_label = "Sculpt Tools"
 
+    @classmethod
+    def poll(cls, context):
+        return context_allows_menu(
+            context,
+            modes={'SCULPT'},
+            object_types={'MESH'},
+            require_object=True,
+        )
+
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
-        pie.scale_y = 1.2
+        configure_pie_layout(pie)
         prefs = get_addon_preferences()
 
         # 4 - LEFT
@@ -1742,6 +1936,7 @@ class PIESPLUS_MT_save(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         # 4 - LEFT
         pie.operator("wm.open_mainfile", text="Open...", icon='FILEBROWSER')
@@ -1836,6 +2031,7 @@ class PIESPLUS_MT_align(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         # 4 - LEFT
         pie.operator("pies_plus.world_align", text = "Align Global X", icon = 'AXIS_FRONT').align_axis = 'align_x'
@@ -1895,6 +2091,7 @@ class PIESPLUS_MT_mark_edge(Menu):
     def draw(self, context):
         layout = self.layout
         pie = layout.menu_pie()
+        configure_pie_layout(pie)
 
         # 4 - LEFT
         pie.separator()
@@ -1952,6 +2149,7 @@ classes = (
     PIESPLUS_OT_choose_custom_sculpt_brush,
     PIESPLUS_OT_reset_custom_sculpt_brush_slot,
     PIESPLUS_OT_reset_custom_sculpt_brushes,
+    PIESPLUS_OT_show_ui_ux_preview,
     PIESPLUS_OT_set_custom_sculpt_brush_preset,
 )
 

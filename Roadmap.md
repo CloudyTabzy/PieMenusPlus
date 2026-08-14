@@ -16,9 +16,13 @@ This document outlines future improvements and development goals for Pie Menus P
 
 ## UI/UX Enhancements
 
-- [ ] Add customizable pie menu themes (colors, icons)
-- [ ] Implement pie menu preview/editor
-- [ ] Add context-aware menu filtering based on selection/mode
+- [x] Add configurable pie presentation themes for native, compact, and focus workflows
+- [x] Add label-density controls, icon/thumbnail preferences, and a sculpt pie preview/editor
+- [x] Add opt-out context-aware menu filtering based on selection, mode, and editor
+
+> Note: Blender owns the native pie container's background colors. Pie Menus Plus
+> keeps this feature version-safe by theming labels, spacing, icons, thumbnails,
+> and availability cues instead of modifying Blender's global theme.
 
 ## Animation Tools
 

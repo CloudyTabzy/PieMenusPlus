@@ -1,5 +1,7 @@
 ##### Table of Contents
 - [Introduction](#introduction)
+- [Project layout](#project-layout)
+- [Building](#building)
 - [Functionality](#functionality)
   - [Available Pie Menus](#available-pie-menus)
   - [Made for industry artists](#made-for-industry-artists)
@@ -17,6 +19,14 @@
 Welcome to Pie Menus Plus! This is a free and open-source add-on providing improved pie menus for Blender 4.2+.
 
 **Compatibility:** Version 2.1.0 supports Blender 4.2 through current Blender releases, including Blender 5.2+.
+
+# Project layout
+- `addon/` contains the Blender-installable add-on package and its `blender_manifest.toml`.
+- `build.bat` builds the package from `addon/` and writes the installable zip to the project root.
+- `README.md`, `Roadmap.md`, `ops.md`, and `pie_ops.md` are project documentation.
+
+# Building
+Run `build.bat` from Windows with Blender available on `PATH`, or set the `BLENDER_EXE` environment variable to the Blender executable before running it. The generated `PieMenusPlus-2.1.0.zip` can be installed through Blender’s Extensions preferences.
 
 # Recent Updates (v2.1.0)
 - **EdgeFlow Integration**: Added context-aware pie menu for EdgeFlow addon (Shift+Alt+F) with smart vertex/edge mode detection

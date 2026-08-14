@@ -20,6 +20,10 @@ This document outlines future improvements and development goals for Pie Menus P
 - [ ] Implement pie menu preview/editor
 - [ ] Add context-aware menu filtering based on selection/mode
 
+## Animation Tools
+
+- [x] Integrate configurable timeline scrubbing with keyframe snapping and rolling mode
+
 ## Completed
 
 - [x] Prefer brush assets with a legacy `paint.brush_select` fallback for Blender 4.2+
@@ -31,3 +35,4 @@ This document outlines future improvements and development goals for Pie Menus P
 - [x] Add EdgeFlow addon integration with context-aware pie menu (Shift+Alt+F)
 - [x] Add Blender 4.2-5.2+ API compatibility fallbacks
 - [x] Add dynamic optional dependency detection and integration status UI
+- [x] Integrate configurable timeline scrub with viewport HUD and editor keymaps

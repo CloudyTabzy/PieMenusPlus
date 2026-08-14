@@ -12,6 +12,10 @@ except ImportError:
 
 from .utils import get_addon_preferences
 from .dependencies import dependency_statuses
+from .pie_ops.pie_timeline_scrub import (
+    PIESPLUS_timeline_settings,
+    draw_timeline_scrub_preferences,
+)
 
 
 ##################################
@@ -296,6 +300,8 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
         default="Brushes/mesh_sculpt/Flatten"
     )
 
+    timeline_scrub: PointerProperty(type=PIESPLUS_timeline_settings)
+
     # Selection Prefs
     invert_selection_pref: BoolProperty(
         description="Only deselect all objects if all object are selected (versus deselecting if any selection is made)"
@@ -454,6 +460,11 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             col.prop(self, "custom_sculpt_brush_7")
             col.prop(self, "custom_sculpt_brush_8")
 
+            col = layout.column(align=True)
+            col.separator()
+            box = col.box()
+            draw_timeline_scrub_preferences(self.timeline_scrub, box)
+
 
 ##################################
 # REGISTRATION
@@ -461,6 +472,7 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
 
 
 classes = (
+    PIESPLUS_timeline_settings,
     PIESPLUS_MT_addon_prefs,
     PIESPLUS_OT_add_hotkey,
     PIESPLUS_property_group

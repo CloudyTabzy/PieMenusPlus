@@ -6,6 +6,8 @@
 
 from ..utils import get_addon_preferences
 
+import math
+
 import bpy
 import gpu
 import blf
@@ -67,6 +69,152 @@ def _object_keyframes(obj):
     )
 
 
+def _append_frame_values(target, values):
+    """Append finite frame values without introducing duplicates."""
+    known = set(target)
+    for value in values:
+        try:
+            frame = float(value)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(frame) and frame not in known:
+            target.append(frame)
+            known.add(frame)
+
+
+def _grease_pencil_keyframes(obj, layer_target):
+    """Return Grease Pencil drawing frames using the current layer context."""
+    data = getattr(obj, 'data', None)
+    layers = getattr(data, 'layers', None)
+    if layers is None:
+        return ()
+
+    if layer_target == 'ALL':
+        return (
+            frame.frame_number
+            for layer in layers
+            for frame in getattr(layer, 'frames', ())
+        )
+
+    frames = []
+    layer_groups = getattr(data, 'layer_groups', None)
+    active_group = getattr(layer_groups, 'active', None)
+    if active_group:
+        frames.extend(
+            frame.frame_number
+            for layer in layers
+            for frame in getattr(layer, 'frames', ())
+            if getattr(layer, 'parent_group', None) == active_group
+        )
+
+    active_layer = getattr(layers, 'active', None)
+    if active_layer:
+        frames.extend(
+            frame.frame_number
+            for frame in getattr(active_layer, 'frames', ())
+        )
+    return frames
+
+
+def _smart_objects(context, scope):
+    """Return animation sources for Smart Scrub's selected scope."""
+    if not context.space_data or context.space_data.type not in {'VIEW_3D', 'NODE_EDITOR'}:
+        return ()
+
+    active = getattr(context, 'active_object', None) or getattr(context, 'object', None)
+    if scope == 'ACTIVE':
+        return (active,) if active else ()
+
+    if scope == 'SELECTED':
+        objects = list(getattr(context, 'selected_objects', ()))
+    else:
+        objects = []
+        for obj in getattr(getattr(context, 'view_layer', None), 'objects', ()):
+            try:
+                visible = obj.visible_get()
+            except (AttributeError, RuntimeError):
+                visible = not getattr(obj, 'hide_viewport', False)
+            if visible:
+                objects.append(obj)
+
+    if active and active not in objects:
+        objects.insert(0, active)
+    return tuple(objects)
+
+
+def _sequence_strip_bounds(scene):
+    """Return strip boundaries across Blender's sequence collection names."""
+    sequence_editor = getattr(scene, 'sequence_editor', None)
+    if sequence_editor is None:
+        return ()
+
+    strips = getattr(sequence_editor, 'strips_all', None)
+    if strips is None:
+        strips = getattr(sequence_editor, 'sequences_all', ())
+
+    bounds = []
+    for strip in strips:
+        start = getattr(strip, 'frame_final_start', None)
+        end = getattr(strip, 'frame_final_end', None)
+        if start is not None:
+            bounds.append(start)
+        if end is not None:
+            bounds.append(end)
+    return bounds
+
+
+def _smart_target_frames(context, prefs):
+    """Build one unified set of meaningful frames for Smart Scrub."""
+    frames = []
+    labels = []
+
+    for obj in _smart_objects(context, prefs.smart_target_scope):
+        if not _is_grease_pencil_object(obj) or prefs.evaluate_gp_obj_key:
+            object_frames = list(_object_keyframes(obj))
+            _append_frame_values(frames, object_frames)
+            if object_frames:
+                labels.append('Object Keys')
+
+        if _is_grease_pencil_object(obj):
+            gp_frames = _grease_pencil_keyframes(obj, prefs.gp_layer_target)
+            before = len(frames)
+            _append_frame_values(frames, gp_frames)
+            if len(frames) != before:
+                labels.append('Grease Pencil')
+
+    if prefs.smart_include_markers:
+        marker_frames = [marker.frame for marker in getattr(context.scene, 'timeline_markers', ())]
+        before = len(frames)
+        _append_frame_values(frames, marker_frames)
+        if len(frames) != before:
+            labels.append('Markers')
+
+    if prefs.smart_include_strip_bounds and context.space_data:
+        if context.space_data.type == 'SEQUENCE_EDITOR':
+            strip_frames = _sequence_strip_bounds(context.scene)
+            before = len(frames)
+            _append_frame_values(frames, strip_frames)
+            if len(frames) != before:
+                labels.append('Strip Bounds')
+
+    if not labels:
+        labels.append('Frame Range')
+    return sorted(frames), ' + '.join(dict.fromkeys(labels))
+
+
+def _smart_snap_frame(raw_frame, targets, previous, radius):
+    """Snap near a semantic target while keeping the cursor stable in its halo."""
+    if not targets:
+        return raw_frame, None
+
+    candidate = nearest(targets, raw_frame)
+    if previous is not None and abs(raw_frame - previous) <= radius + 1:
+        return previous, previous
+    if abs(raw_frame - candidate) <= radius:
+        return candidate, candidate
+    return raw_frame, None
+
+
 def draw_callback_px(self, context):
     '''Draw callback use by modal to draw in viewport'''
     if context.area != self.current_area:
@@ -121,6 +269,12 @@ def draw_callback_px(self, context):
         sign = '+' if self.offset > 0 else ''
         blf.draw(font_id, f'{sign}{self.offset:.0f}')
 
+    if self.smart_scrub and self.smart_show_status:
+        blf.position(font_id, self.mouse[0]+10,
+                     self.mouse[1]-(30*self.ui_scale), 0)
+        blf.size(font_id, 13 * (self.dpi / 72.0))
+        blf.draw(font_id, f'Smart: {self.smart_target_label}')
+
 
 class PIESPLUS_OT_time_scrub(bpy.types.Operator):
     bl_idname = "pies_plus.timeline_scrub"
@@ -147,6 +301,12 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
         self.always_snap = prefs.always_snap
         self.rolling_mode = prefs.rolling_mode
         self.hide_overlays = prefs.hide_overlays
+        self.smart_scrub = prefs.smart_scrub
+        self.smart_auto_snap = prefs.smart_auto_snap
+        self.smart_snap_radius = prefs.smart_snap_radius
+        self.smart_show_status = prefs.smart_show_status
+        self.smart_snap_frame = None
+        self.smart_target_label = ''
 
         self.dpi = context.preferences.system.dpi
         self.ui_scale = context.preferences.system.ui_scale
@@ -164,7 +324,7 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
         self.playhead_size = prefs.playhead_size
         self.lines_size = prefs.lines_size
 
-        self.px_step = prefs.pixel_step
+        self.px_step = float(prefs.pixel_step)
         self.snap_on = False
         self.mouse = (event.mouse_region_x, event.mouse_region_y)
         self.init_mouse_x = self.cursor_x = event.mouse_region_x
@@ -178,6 +338,11 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
         else:
             self.f_start = context.scene.frame_start
             self.f_end = context.scene.frame_end
+
+        if self.smart_scrub and prefs.smart_adaptive_sensitivity:
+            frame_span = max(self.f_end - self.f_start, 1)
+            area_width = max(getattr(context.area, 'width', 1), 1)
+            self.px_step = min(self.px_step, max(1.0, area_width / frame_span))
 
         self.offset = 0
         self.pos = []
@@ -193,7 +358,10 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
         if context.space_data.type not in ('VIEW_3D', 'NODE_EDITOR'):
             ob = None  # do not consider any key
 
-        if ob:  # condition to allow empty scrubing
+        if self.smart_scrub:
+            self.pos, self.smart_target_label = _smart_target_frames(context, prefs)
+            self.smart_positions = list(self.pos)
+        elif ob:  # condition to allow empty scrubing
             if not _is_grease_pencil_object(ob) or self.evaluate_gp_obj_key:
                 # Get object keyframe position
                 self.pos += list(set(_object_keyframes(ob)))
@@ -232,7 +400,7 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
                             if frame.frame_number not in self.pos:
                                 self.pos.append(frame.frame_number)
 
-        if not ob or not self.pos:
+        if (not ob and not self.smart_scrub) or not self.pos:
             # Disable inverted behavior if no frame to snap
             self.always_snap = False
             if self.rolling_mode:
@@ -262,6 +430,8 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
 
         # Also snap on play bounds (sliced off for keyframe display)
         self.pos += [self.f_start, self.f_end]
+        if self.smart_scrub:
+            self.smart_positions = sorted(set(self.pos))
 
         # Disable Onion skin and other overlays
         self.active_space_data = context.space_data
@@ -427,6 +597,11 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
         # (after drawing batch so those are still showed)
         if self.lock_range:
             self.pos = [i for i in self.pos if self.f_start <= i <= self.f_end]
+            if self.smart_scrub:
+                self.smart_positions = [
+                    i for i in self.smart_positions
+                    if self.f_start <= i <= self.f_end
+                ]
 
         if self.rolling_mode:
             context.scene.frame_current = self.new_frame
@@ -481,7 +656,8 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
 
             px_offset = (event.mouse_region_x - self.init_mouse_x)
             self.offset = int(px_offset / self.px_step)
-            self.new_frame = self.init_frame + self.offset
+            raw_frame = self.init_frame + self.offset
+            self.new_frame = raw_frame
 
             if self.rolling_mode:
                 # Frame Flipping mode (equidistant scrub snap)
@@ -509,6 +685,21 @@ class PIESPLUS_OT_time_scrub(bpy.types.Operator):
                 else:
                     if self.snap_on or mod_snap:
                         self.new_frame = nearest(self.pos, self.new_frame)
+
+                if self.smart_scrub and self.smart_auto_snap:
+                    smart_snap_allowed = (
+                        not self.snap_on
+                        and (not self.always_snap or mod_snap)
+                    )
+                    if smart_snap_allowed:
+                        self.new_frame, self.smart_snap_frame = _smart_snap_frame(
+                            raw_frame,
+                            self.smart_positions,
+                            self.smart_snap_frame,
+                            self.smart_snap_radius,
+                        )
+                    else:
+                        self.smart_snap_frame = None
 
                 # frame range restriction
                 if self.lock_range:
@@ -625,6 +816,60 @@ class PIESPLUS_timeline_settings(bpy.types.PropertyGroup):
         description="Enable/Disable timeline scrub",
         default=True,
         update=auto_rebind)
+
+    smart_scrub: BoolProperty(
+        name="Smart Scrub",
+        description=(
+            "Opt into context-aware targets, proximity snapping, and adaptive "
+            "scrub sensitivity; disabled by default to preserve classic behavior"
+        ),
+        default=False)
+
+    smart_target_scope: EnumProperty(
+        name="Animation Scope",
+        description="Animation sources used by Smart Scrub",
+        default='ACTIVE',
+        items=(
+            ('ACTIVE', 'Active Object',
+             'Use keys from the active object and its active Grease Pencil layer', 0),
+            ('SELECTED', 'Selected Objects',
+             'Use keys from the active and selected objects', 1),
+            ('VISIBLE', 'Visible Objects',
+             'Use keys from all visible objects in the current view layer', 2),
+        ))
+
+    smart_include_markers: BoolProperty(
+        name="Include Markers",
+        description="Use scene timeline markers as Smart Scrub targets",
+        default=True)
+
+    smart_include_strip_bounds: BoolProperty(
+        name="Include Strip Bounds",
+        description="Use video and sound strip boundaries as Sequencer targets",
+        default=True)
+
+    smart_auto_snap: BoolProperty(
+        name="Proximity Snap",
+        description="Magnetically snap when the cursor moves close to a Smart Scrub target",
+        default=True)
+
+    smart_snap_radius: IntProperty(
+        name="Snap Radius",
+        description="Maximum frame distance for proximity snapping",
+        default=2,
+        min=0,
+        max=20,
+        soft_max=8)
+
+    smart_adaptive_sensitivity: BoolProperty(
+        name="Adaptive Sensitivity",
+        description="Reduce the pixel step for long frame ranges so more of the scene is reachable",
+        default=True)
+
+    smart_show_status: BoolProperty(
+        name="Smart HUD Status",
+        description="Show the active Smart Scrub target sources in the temporary HUD",
+        default=True)
 
     use_in_timeline_editor: BoolProperty(
         name="Shortcut in timeline editors",
@@ -780,6 +1025,24 @@ def draw_timeline_scrub_preferences(prefs, layout):
     layout.prop(prefs, 'evaluate_gp_obj_key')
     layout.prop(prefs, 'gp_layer_target')
     layout.prop(prefs, 'pixel_step')
+
+    smart_box = layout.box()
+    smart_box.label(text='Smart Scrub (optional):')
+    smart_box.prop(prefs, 'smart_scrub')
+    if prefs.smart_scrub:
+        smart_box.label(
+            text='Adds context-aware targets while classic scrub settings stay independent.',
+            icon='INFO')
+        smart_box.prop(prefs, 'smart_target_scope')
+        row = smart_box.row(align=True)
+        row.prop(prefs, 'smart_include_markers')
+        row.prop(prefs, 'smart_include_strip_bounds')
+        row = smart_box.row(align=True)
+        row.prop(prefs, 'smart_auto_snap')
+        row.prop(prefs, 'smart_snap_radius')
+        row = smart_box.row(align=True)
+        row.prop(prefs, 'smart_adaptive_sensitivity')
+        row.prop(prefs, 'smart_show_status')
 
     # -/ Keymap -
     box = layout.box()

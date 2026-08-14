@@ -23,6 +23,7 @@ This document outlines future improvements and development goals for Pie Menus P
 ## Animation Tools
 
 - [x] Integrate configurable timeline scrubbing with keyframe snapping and rolling mode
+- [x] Add optional Smart Scrub with context-aware targets and proximity snapping
 
 ## Completed
 

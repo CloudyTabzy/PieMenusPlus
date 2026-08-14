@@ -2,7 +2,7 @@ bl_info = {
     "name": "Pie Menus Plus",
     "description": "Improved Pie Menu ecosystem for Blender 4.2+",
     "author": "Tabzy",
-    "version": (2, 3, 0),
+    "version": (2, 4, 0),
     "blender": (4, 2, 0),
     "category": "3D View",
 }

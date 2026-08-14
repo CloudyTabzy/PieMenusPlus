@@ -18,7 +18,7 @@
 # Introduction
 Welcome to Pie Menus Plus! This is a free and open-source add-on providing improved pie menus for Blender 4.2+.
 
-**Compatibility:** Version 2.3.0 supports Blender 4.2 through current Blender releases, including Blender 5.2+.
+**Compatibility:** Version 2.4.0 supports Blender 4.2 through current Blender releases, including Blender 5.2+.
 
 # Project layout
 - `addon/` contains the Blender-installable add-on package and its `blender_manifest.toml`.
@@ -26,9 +26,10 @@ Welcome to Pie Menus Plus! This is a free and open-source add-on providing impro
 - `README.md`, `Roadmap.md`, `ops.md`, and `pie_ops.md` are project documentation.
 
 # Building
-Run `build.bat` from Windows with Blender available on `PATH`, or set the `BLENDER_EXE` environment variable to the Blender executable before running it. The generated `dist\PieMenusPlus-2.3.0.zip` can be installed through Blender’s Extensions preferences.
+Run `build.bat` from Windows with Blender available on `PATH`, or set the `BLENDER_EXE` environment variable to the Blender executable before running it. The generated `dist\PieMenusPlus-2.4.0.zip` can be installed through Blender’s Extensions preferences.
 
-# Recent Updates (v2.3.0)
+## Recent Updates (v2.4.0)
+- **Optional Smart Scrub**: Adds opt-in context-aware animation targets, active/selected/visible object scopes, marker and Sequencer boundary targets, proximity snapping, adaptive sensitivity, and target-source HUD status
 - **Timeline Scrub**: Integrated configurable modal timeline scrubbing with keyframe snapping, rolling mode, viewport HUD, and timeline-editor options
 - **Optional Dependency Detection**: Dynamically detects LoopTools, Bool Tool, and EdgeFlow availability, reports status in preferences, and provides useful fallback messages in their pies
 - **EdgeFlow Integration**: Added context-aware pie menu for EdgeFlow addon (Shift+Alt+F) with smart vertex/edge mode detection

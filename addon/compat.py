@@ -98,19 +98,28 @@ def select_edge_loop_or_ring(ring: bool) -> bool:
 _LEGACY_BRUSH_TOOLS = {
     'SCULPT': {
         'Draw': 'DRAW',
+        'Draw Sharp': 'DRAW_SHARP',
         'Clay': 'CLAY',
         'Clay Strips': 'CLAY_STRIPS',
         'Clay Thumb': 'CLAY_THUMB',
         'Layer': 'LAYER',
         'Inflate': 'INFLATE',
+        'Inflate/Deflate': 'INFLATE',
         'Blob': 'BLOB',
         'Crease': 'CREASE',
+        'Crease Sharp': 'CREASE',
+        'Crease Polish': 'CREASE',
         'Smooth': 'SMOOTH',
         'Flatten': 'FLATTEN',
+        'Flatten/Contrast': 'FLATTEN',
         'Fill': 'FILL',
+        'Fill/Deepen': 'FILL',
         'Scrape': 'SCRAPE',
+        'Scrape/Fill': 'SCRAPE',
+        'Scrape Multiplane': 'SCRAPE',
         'Cloth': 'CLOTH',
         'Face Sets': 'DRAW_FACE_SETS',
+        'Face Set Paint': 'DRAW_FACE_SETS',
         'Elastic Deform': 'ELASTIC_DEFORM',
         'Pinch': 'PINCH',
         'Grab': 'GRAB',
@@ -146,22 +155,106 @@ _LEGACY_BRUSH_TOOLS = {
 }
 
 
+_ESSENTIALS_BRUSH_ALIASES = {
+    'Inflate': ('Inflate/Deflate', 'Inflate'),
+    'Crease': ('Crease Sharp', 'Crease Polish', 'Crease'),
+    'Flatten': ('Flatten/Contrast', 'Flatten'),
+    'Fill': ('Fill/Deepen', 'Fill'),
+    'Scrape': ('Scrape/Fill', 'Scrape'),
+    'Multi-plane Scrape': ('Scrape Multiplane', 'Multi-plane Scrape'),
+    'Face Sets': ('Face Set Paint', 'Face Sets'),
+    'Elastic Deform': ('Elastic Grab', 'Elastic Snake Hook', 'Elastic Deform'),
+    'Pinch': ('Pinch/Magnify', 'Pinch'),
+    'Slide Relax': ('Relax Slide', 'Slide Relax'),
+    'Displacement Eraser': (
+        'Erase Multires Displacement',
+        'Displacement Eraser',
+    ),
+    'Displacement Smear': (
+        'Smear Multires Displacement',
+        'Displacement Smear',
+    ),
+    'Multires Displacement Eraser': (
+        'Erase Multires Displacement',
+        'Multires Displacement Eraser',
+    ),
+    'Multires Displacement Smear': (
+        'Smear Multires Displacement',
+        'Multires Displacement Smear',
+    ),
+    'Rotate': ('Twist', 'Rotate'),
+    'Cloth': ('Grab Cloth', 'Cloth'),
+}
+
+
+_ESSENTIALS_BRUSH_CATEGORIES = {
+    'mesh_sculpt': 'SCULPT',
+    'mesh_texture': 'TEXTURE_PAINT',
+    'mesh_vertex': 'VERTEX_PAINT',
+    'mesh_weight': 'WEIGHT_PAINT',
+}
+
+
 def _brush_name(asset_path: str, brush_name: Optional[str]) -> str:
     if brush_name:
         return brush_name
-    return asset_path.rstrip('/\\').replace('\\', '/').rsplit('/', 1)[-1]
+    normalized = asset_path.rstrip('/\\').replace('\\', '/')
+    if '/Brush/' in normalized:
+        return normalized.split('/Brush/', 1)[1]
+    return normalized.rsplit('/', 1)[-1]
+
+
+def _asset_path_candidates(asset_path: str, brush_name: Optional[str]):
+    """Return modern Essentials paths plus the legacy path supplied by users."""
+    normalized = asset_path.strip().replace('\\', '/')
+    if not normalized:
+        return ()
+
+    candidates = []
+    category_key = None
+    lowered = normalized.lower()
+    for key in _ESSENTIALS_BRUSH_CATEGORIES:
+        if f'/{key}/' in f'/{lowered}/' or f'essentials_brushes-{key}.blend' in lowered:
+            category_key = key
+            break
+
+    if category_key:
+        name = _brush_name(normalized, brush_name)
+        names = (
+            _ESSENTIALS_BRUSH_ALIASES.get(name, (name,))
+            if category_key == 'mesh_sculpt'
+            else (name,)
+        )
+        for name_variant in names:
+            candidates.append(
+                f'brushes/essentials_brushes-{category_key}.blend/Brush/{name_variant}'
+            )
+
+    candidates.append(normalized)
+    return tuple(dict.fromkeys(candidates))
 
 
 def activate_brush(asset_path: str, paint_mode: str,
                    brush_name: Optional[str] = None) -> bool:
-    """Activate an asset brush, falling back to the legacy brush operator."""
-    if call_operator(
-        'brush.asset_activate',
-        asset_library_type='ESSENTIALS',
-        asset_library_identifier='',
-        relative_asset_identifier=asset_path,
-    ):
-        return True
+    """Activate an Essentials brush with modern and legacy API fallbacks."""
+    for candidate in _asset_path_candidates(asset_path, brush_name):
+        if call_operator(
+            'brush.asset_activate',
+            asset_library_type='ESSENTIALS',
+            asset_library_identifier='',
+            relative_asset_identifier=candidate,
+            use_toggle=False,
+        ):
+            return True
+        # The optional toggle argument is not exposed by some early asset
+        # browser builds even though the activation operator is present.
+        if call_operator(
+            'brush.asset_activate',
+            asset_library_type='ESSENTIALS',
+            asset_library_identifier='',
+            relative_asset_identifier=candidate,
+        ):
+            return True
 
     tool_name = _LEGACY_BRUSH_TOOLS.get(paint_mode, {}).get(
         _brush_name(asset_path, brush_name)
@@ -178,11 +271,36 @@ def activate_brush(asset_path: str, paint_mode: str,
     if property_name is None:
         return False
 
-    return call_operator(
+    if call_operator(
         'paint.brush_select',
         paint_mode=paint_mode,
         **{property_name: tool_name},
-    )
+    ):
+        return True
+    if call_operator(
+        'paint.brush_select',
+        **{property_name: tool_name},
+    ):
+        return True
+
+    # Blender builds that removed paint.brush_select still expose the brush
+    # datablock on tool settings. Use it when it is already available.
+    settings_name = {
+        'SCULPT': 'sculpt',
+        'TEXTURE_PAINT': 'image_paint',
+        'VERTEX_PAINT': 'vertex_paint',
+        'WEIGHT_PAINT': 'weight_paint',
+    }.get(paint_mode)
+    settings = getattr(bpy.context.tool_settings, settings_name, None)
+    brush = bpy.data.brushes.get(_brush_name(asset_path, brush_name))
+    if settings is not None and brush is not None and hasattr(settings, 'brush'):
+        try:
+            settings.brush = brush
+            return True
+        except (AttributeError, TypeError, ValueError):
+            pass
+
+    return False
 
 
 def shade_auto_smooth(angle: float) -> bool:

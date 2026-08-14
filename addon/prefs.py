@@ -16,6 +16,11 @@ from .pie_ops.pie_timeline_scrub import (
     PIESPLUS_timeline_settings,
     draw_timeline_scrub_preferences,
 )
+from .sculpt_brushes import (
+    CUSTOM_SCULPT_BRUSH_SLOTS,
+    DEFAULT_CUSTOM_SCULPT_BRUSHES,
+    custom_sculpt_brush_property,
+)
 
 
 ##################################
@@ -262,42 +267,42 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
     custom_sculpt_brush_1: StringProperty(
         name="Brush 1 (Left)",
         description="Asset path for brush 1 (e.g., Brushes/mesh_sculpt/Draw)",
-        default="Brushes/mesh_sculpt/Draw"
+        default=DEFAULT_CUSTOM_SCULPT_BRUSHES[1]
     )
     custom_sculpt_brush_2: StringProperty(
         name="Brush 2 (Right)",
         description="Asset path for brush 2 (e.g., Brushes/mesh_sculpt/Blob)",
-        default="Brushes/mesh_sculpt/Blob"
+        default=DEFAULT_CUSTOM_SCULPT_BRUSHES[2]
     )
     custom_sculpt_brush_3: StringProperty(
         name="Brush 3 (Bottom)",
         description="Asset path for brush 3 (e.g., Brushes/mesh_sculpt/Clay)",
-        default="Brushes/mesh_sculpt/Clay"
+        default=DEFAULT_CUSTOM_SCULPT_BRUSHES[3]
     )
     custom_sculpt_brush_4: StringProperty(
         name="Brush 4 (Top)",
         description="Asset path for brush 4 (e.g., Brushes/mesh_sculpt/Clay Strips)",
-        default="Brushes/mesh_sculpt/Clay Strips"
+        default=DEFAULT_CUSTOM_SCULPT_BRUSHES[4]
     )
     custom_sculpt_brush_5: StringProperty(
         name="Brush 5 (Top-Left)",
         description="Asset path for brush 5 (e.g., Brushes/mesh_sculpt/Inflate)",
-        default="Brushes/mesh_sculpt/Inflate"
+        default=DEFAULT_CUSTOM_SCULPT_BRUSHES[5]
     )
     custom_sculpt_brush_6: StringProperty(
         name="Brush 6 (Top-Right)",
         description="Asset path for brush 6 (e.g., Brushes/mesh_sculpt/Smooth)",
-        default="Brushes/mesh_sculpt/Smooth"
+        default=DEFAULT_CUSTOM_SCULPT_BRUSHES[6]
     )
     custom_sculpt_brush_7: StringProperty(
         name="Brush 7 (Bottom-Left)",
         description="Asset path for brush 7 (e.g., Brushes/mesh_sculpt/Crease)",
-        default="Brushes/mesh_sculpt/Crease"
+        default=DEFAULT_CUSTOM_SCULPT_BRUSHES[7]
     )
     custom_sculpt_brush_8: StringProperty(
         name="Brush 8 (Bottom-Right)",
         description="Asset path for brush 8 (e.g., Brushes/mesh_sculpt/Flatten)",
-        default="Brushes/mesh_sculpt/Flatten"
+        default=DEFAULT_CUSTOM_SCULPT_BRUSHES[8]
     )
 
     timeline_scrub: PointerProperty(type=PIESPLUS_timeline_settings)
@@ -447,18 +452,57 @@ class PIESPLUS_MT_addon_prefs(AddonPreferences):
             col = layout.column(align = True)
             col.separator()
             box = col.box()
-            box.scale_y = .9
-            box.label(text="CUSTOM SCULPT BRUSHES (Blender 4.2+)")
-            box.label(text="Enter asset paths; older builds use a brush-tool fallback")
-            box.label(text="Example: Brushes/mesh_sculpt/Draw")
-            col.prop(self, "custom_sculpt_brush_1")
-            col.prop(self, "custom_sculpt_brush_2")
-            col.prop(self, "custom_sculpt_brush_3")
-            col.prop(self, "custom_sculpt_brush_4")
-            col.prop(self, "custom_sculpt_brush_5")
-            col.prop(self, "custom_sculpt_brush_6")
-            col.prop(self, "custom_sculpt_brush_7")
-            col.prop(self, "custom_sculpt_brush_8")
+            box.label(text="CUSTOM SCULPT BRUSHES", icon='SCULPTMODE_HLT')
+            box.label(text="Assign Essentials brushes to the eight sculpt pie slots")
+            box.label(text="Use Choose for known brushes, or enter an asset path manually")
+
+            preset_row = box.row(align=True)
+            preset_row.label(text="Presets:")
+            for preset, label in (
+                ('BALANCED', 'Balanced'),
+                ('DETAILING', 'Detailing'),
+                ('CHARACTER', 'Character'),
+            ):
+                operator = preset_row.operator(
+                    'pies_plus.set_custom_sculpt_brush_preset',
+                    text=label,
+                    icon='PRESET',
+                )
+                operator.preset = preset
+
+            for slot, direction, brush_name in CUSTOM_SCULPT_BRUSH_SLOTS:
+                row = box.row(align=True)
+                row.label(text=f"{slot}. {direction}", icon='BRUSH_DATA')
+                row.prop(
+                    self,
+                    custom_sculpt_brush_property(slot),
+                    text='',
+                )
+                operator = row.operator(
+                    'pies_plus.choose_custom_sculpt_brush',
+                    text='Choose',
+                )
+                operator.slot = slot
+                operator = row.operator(
+                    'pies_plus.activate_custom_sculpt_brush_slot',
+                    text='',
+                    icon='CHECKMARK',
+                )
+                operator.slot = slot
+                operator = row.operator(
+                    'pies_plus.reset_custom_sculpt_brush_slot',
+                    text='',
+                    icon='X',
+                )
+                operator.slot = slot
+
+            footer = box.row(align=True)
+            footer.label(text="Activate tests the selected slot in the current Blender context")
+            footer.operator(
+                'pies_plus.reset_custom_sculpt_brushes',
+                text='Reset All',
+                icon='FILE_REFRESH',
+            )
 
             col = layout.column(align=True)
             col.separator()

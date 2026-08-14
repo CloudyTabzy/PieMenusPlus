@@ -24,12 +24,13 @@ This document outlines future improvements and development goals for Pie Menus P
 
 - [x] Integrate configurable timeline scrubbing with keyframe snapping and rolling mode
 - [x] Add optional Smart Scrub with context-aware targets and proximity snapping
+- [x] Refactor configurable sculpt brushes with presets, slot controls, and asset-path fallbacks
 
 ## Completed
 
 - [x] Prefer brush assets with a legacy `paint.brush_select` fallback for Blender 4.2+
 - [x] Implement preferences-based custom sculpt brush system
-- [x] Move custom sculpt brushes to keymaps section
+- [x] Move custom sculpt brushes to keymaps section with per-slot controls and presets
 - [x] Fix LoopTools and BoolTool detection to use operator existence checks
 - [x] Remove external links and author references for clean distribution
 - [x] Keep keymap UI optional with a plain-string fallback

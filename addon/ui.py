@@ -4,6 +4,12 @@ from bpy.types import Menu, Operator
 from .utils import get_addon_preferences
 from .compat import activate_brush, draw_snap_toggle, set_grease_pencil_mode
 from .dependencies import draw_dependency_notice
+from .sculpt_brushes import (
+    CUSTOM_SCULPT_BRUSH_SLOTS,
+    SCULPT_BRUSH_PRESETS,
+    custom_sculpt_brush_property,
+    DEFAULT_CUSTOM_SCULPT_BRUSHES,
+)
 
 
 ########################################
@@ -49,7 +55,6 @@ MESH_SCULPT_BRUSHES = {
     "Slide Relax": "Slide Relax",
     "Boundary": "Boundary",
     "Cloth": "Cloth",
-    "Simplify": "Simplify",
     "Displacement Eraser": "Displacement Eraser",
     "Displacement Smear": "Displacement Smear",
     "Sharpen": "Sharpen",
@@ -87,6 +92,17 @@ MESH_WEIGHT_PAINT_BRUSHES = {
 ########################################
 # BRUSH POPUP OPERATORS (Blender 4.2+ with legacy fallback)
 ########################################
+
+
+def _sculpt_brush_choice_items(_self, _context):
+    return tuple(
+        (str(index), name, f"Use the Essentials {name} brush")
+        for index, name in enumerate(MESH_SCULPT_BRUSHES.values())
+    )
+
+
+def _custom_sculpt_path(prefs, slot):
+    return getattr(prefs, custom_sculpt_brush_property(slot), '').strip()
 
 
 class PIESPLUS_MT_sculpt_brushes(Menu):
@@ -147,6 +163,123 @@ class PIESPLUS_OT_activate_custom_sculpt_brush(Operator):
         except (RuntimeError, TypeError, ValueError):
             self.report({'WARNING'}, f"Could not activate brush: {self.brush_path}")
             return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_activate_custom_sculpt_brush_slot(Operator):
+    bl_idname = "pies_plus.activate_custom_sculpt_brush_slot"
+    bl_label = "Activate Configured Sculpt Brush"
+    bl_description = "Activate the configured brush for this sculpt pie slot"
+    bl_options = {'REGISTER'}
+
+    slot: bpy.props.IntProperty(name="Slot", min=1, max=8)
+
+    def execute(self, context):
+        prefs = get_addon_preferences()
+        brush_path = _custom_sculpt_path(prefs, self.slot)
+        if not brush_path:
+            self.report({'WARNING'}, f"Sculpt brush slot {self.slot} is empty")
+            return {'CANCELLED'}
+
+        if not activate_brush(brush_path, 'SCULPT'):
+            self.report({'WARNING'}, f"Could not activate sculpt brush: {brush_path}")
+            return {'CANCELLED'}
+
+        self.report({'INFO'}, f"Activated sculpt brush slot {self.slot}")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_choose_custom_sculpt_brush(Operator):
+    bl_idname = "pies_plus.choose_custom_sculpt_brush"
+    bl_label = "Choose Essentials Sculpt Brush"
+    bl_description = "Choose a named Essentials brush for a configured sculpt pie slot"
+    bl_options = {'REGISTER'}
+
+    slot: bpy.props.IntProperty(name="Slot", min=1, max=8)
+    brush_choice: bpy.props.EnumProperty(
+        name="Brush",
+        items=_sculpt_brush_choice_items,
+    )
+
+    def invoke(self, context, event):
+        prefs = get_addon_preferences()
+        current_path = _custom_sculpt_path(prefs, self.slot)
+        current_name = current_path.rstrip('/\\').replace('\\', '/').rsplit('/', 1)[-1]
+        choices = list(MESH_SCULPT_BRUSHES.values())
+        if current_name in choices:
+            self.brush_choice = str(choices.index(current_name))
+        return context.window_manager.invoke_props_dialog(self, width=360)
+
+    def execute(self, context):
+        choices = list(MESH_SCULPT_BRUSHES.values())
+        brush_name = choices[int(self.brush_choice)]
+        prefs = get_addon_preferences()
+        setattr(
+            prefs,
+            custom_sculpt_brush_property(self.slot),
+            f"Brushes/mesh_sculpt/{brush_name}",
+        )
+        self.report({'INFO'}, f"Slot {self.slot}: {brush_name}")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_reset_custom_sculpt_brush_slot(Operator):
+    bl_idname = "pies_plus.reset_custom_sculpt_brush_slot"
+    bl_label = "Reset Sculpt Brush Slot"
+    bl_description = "Restore this sculpt pie slot to its default brush"
+    bl_options = {'REGISTER'}
+
+    slot: bpy.props.IntProperty(name="Slot", min=1, max=8)
+
+    def execute(self, context):
+        prefs = get_addon_preferences()
+        setattr(
+            prefs,
+            custom_sculpt_brush_property(self.slot),
+            DEFAULT_CUSTOM_SCULPT_BRUSHES[self.slot],
+        )
+        self.report({'INFO'}, f"Reset sculpt brush slot {self.slot}")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_reset_custom_sculpt_brushes(Operator):
+    bl_idname = "pies_plus.reset_custom_sculpt_brushes"
+    bl_label = "Reset Sculpt Brushes"
+    bl_description = "Restore all configured sculpt pie slots to their defaults"
+    bl_options = {'REGISTER'}
+
+    def execute(self, context):
+        prefs = get_addon_preferences()
+        for slot, _direction, _brush_name in CUSTOM_SCULPT_BRUSH_SLOTS:
+            setattr(
+                prefs,
+                custom_sculpt_brush_property(slot),
+                DEFAULT_CUSTOM_SCULPT_BRUSHES[slot],
+            )
+        self.report({'INFO'}, "Reset all sculpt brush slots")
+        return {'FINISHED'}
+
+
+class PIESPLUS_OT_set_custom_sculpt_brush_preset(Operator):
+    bl_idname = "pies_plus.set_custom_sculpt_brush_preset"
+    bl_label = "Apply Sculpt Brush Preset"
+    bl_description = "Assign a workflow-oriented set of brushes to all sculpt pie slots"
+    bl_options = {'REGISTER'}
+
+    preset: bpy.props.EnumProperty(
+        name="Preset",
+        items=(
+            ('BALANCED', 'Balanced', 'General sculpting layout'),
+            ('DETAILING', 'Detailing', 'Sharper forms and surface detail'),
+            ('CHARACTER', 'Character', 'Blocking and character-sculpting layout'),
+        ),
+    )
+
+    def execute(self, context):
+        prefs = get_addon_preferences()
+        for slot, brush_path in SCULPT_BRUSH_PRESETS[self.preset].items():
+            setattr(prefs, custom_sculpt_brush_property(slot), brush_path)
+        self.report({'INFO'}, f"Applied {self.preset.title()} sculpt preset")
         return {'FINISHED'}
 
 
@@ -1441,24 +1574,22 @@ class PIESPLUS_MT_sculpt(Menu):
         pie = layout.menu_pie()
         layout.scale_y = 1.2
 
-        prefs = get_addon_preferences()
-
         # 4 - LEFT
-        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 1").brush_path = prefs.custom_sculpt_brush_1
+        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 1").slot = 1
         # 6 - RIGHT
-        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 2").brush_path = prefs.custom_sculpt_brush_2
+        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 2").slot = 2
         # 2 - BOTTOM
-        pie.menu("PIESPLUS_MT_sculpt_brushes", text="    Brushes...")
+        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 3").slot = 3
         # 8 - TOP
-        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 3").brush_path = prefs.custom_sculpt_brush_3
+        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 4").slot = 4
         # 7 - TOP - LEFT
-        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 4").brush_path = prefs.custom_sculpt_brush_4
+        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 5").slot = 5
         # 9 - TOP - RIGHT
-        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 5").brush_path = prefs.custom_sculpt_brush_5
+        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 6").slot = 6
         # 1 - BOTTOM - LEFT
-        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 6").brush_path = prefs.custom_sculpt_brush_6
+        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 7").slot = 7
         # 3 - BOTTOM - RIGHT
-        pie.operator("pies_plus.activate_custom_sculpt_brush", text="    Brush 7").brush_path = prefs.custom_sculpt_brush_7
+        pie.operator("pies_plus.activate_custom_sculpt_brush_slot", text="    Brush 8").slot = 8
 
 
 class PIESPLUS_MT_sculpt_more(Menu):
@@ -1752,6 +1883,11 @@ classes = (
     PIESPLUS_MT_mark_edge,
     PIESPLUS_OT_activate_sculpt_brush,
     PIESPLUS_OT_activate_custom_sculpt_brush,
+    PIESPLUS_OT_activate_custom_sculpt_brush_slot,
+    PIESPLUS_OT_choose_custom_sculpt_brush,
+    PIESPLUS_OT_reset_custom_sculpt_brush_slot,
+    PIESPLUS_OT_reset_custom_sculpt_brushes,
+    PIESPLUS_OT_set_custom_sculpt_brush_preset,
 )
 
 
